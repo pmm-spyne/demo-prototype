@@ -47,6 +47,11 @@ export interface PitchContent {
   };
   /** Feature cards (Demo 1 style — stagger in after the hero) */
   features?: PitchFeature[];
+  /**
+   * When to show feature cards. "pitch" = first drawer (default).
+   * "success" = second drawer after the primary CTA completes (e.g. SmartMatch).
+   */
+  featuresPhase?: "pitch" | "success";
   /** Primary CTA label (Process / Match / Syndicate / Launch campaign) */
   actionLabel: string;
 }
@@ -108,10 +113,17 @@ export function PitchPanel(props: PitchPanelProps) {
   const {
     open, onClose, onAction, actionRunning, completed,
     accent, product, step, tagline, punchline, problem, bullets,
-    proof, heroImage, heroNode, comparison, features, actionLabel,
+    proof, heroImage, heroNode, comparison, features, featuresPhase = "pitch", actionLabel,
     channels, selectedChannels, onChannelToggle,
     success,
   } = props;
+
+  const showFeatures = Boolean(
+    features?.length && (
+      (featuresPhase === "success" && success) ||
+      (featuresPhase !== "success" && !success)
+    )
+  );
   const panelRef = useRef<HTMLDivElement>(null);
   const sectionsRef = useRef<HTMLDivElement>(null);
   const heroImgRef = useRef<HTMLImageElement>(null);
@@ -182,7 +194,7 @@ export function PitchPanel(props: PitchPanelProps) {
     }
 
     return () => { tl.kill(); };
-  }, [open, product, parsedProof]);
+  }, [open, product, parsedProof, success, featuresPhase]);
 
   if (!open) return null;
 
@@ -355,10 +367,13 @@ export function PitchPanel(props: PitchPanelProps) {
           )}
 
           {/* Feature cards — Demo 1 grid style */}
-          {!success && features && features.length > 0 && (
-            <div data-section className="mb-[20px]">
+          {showFeatures && (
+            <div
+              data-section
+              className={`mb-[20px]${success && featuresPhase === "success" ? " mt-[32px]" : ""}`}
+            >
               <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[10px] font-['Inter:Bold',sans-serif]">
-                What you get
+                {success && featuresPhase === "success" ? "What you got" : "What you get"}
               </p>
               <div className="grid grid-cols-3 gap-[8px]">
                 {features.slice(0, 3).map((f, i) => (

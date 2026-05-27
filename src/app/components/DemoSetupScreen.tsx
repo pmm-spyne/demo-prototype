@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import {
   Sparkles, ArrowRight, Camera, Clock, DollarSign,
-  ChevronDown, ChevronUp, Info, ImageOff,
+  ChevronDown, ChevronUp, Info,
 } from "lucide-react";
 import { SpyneMark } from "./AppShell";
 import {
@@ -693,11 +693,19 @@ export function DemoSetupScreen({ onLaunch }: Props) {
               <SectionHeading>Monthly Opportunity Breakdown</SectionHeading>
               <div className="flex gap-[10px]">
                 <ImpactCard
-                  icon={<ImageOff size={14} strokeWidth={2.5} />}
-                  label="Media Gap Cost"
-                  value={`$${Math.round(opp.mediaGapMonthly / 1000)}K`}
-                  sub={`~${opp.vehiclesNoPhotos} vehicles without photos (est. ${opp.pctWithoutPhotos}%) at $220/wk each in missed leads`}
-                  accent="#EF4444"
+                  icon={<Camera size={14} strokeWidth={2.5} />}
+                  label="Photography Cost"
+                  value={
+                    opp.photographyCostMonthly >= 1000
+                      ? `$${Math.round(opp.photographyCostMonthly / 1000)}K`
+                      : `$${opp.photographyCostMonthly.toLocaleString()}`
+                  }
+                  sub={
+                    config.monthlyPhotographySpend
+                      ? `Current monthly spend: ${config.monthlyPhotographySpend}`
+                      : `$${config.perVinCost}/car x ${config.totalInventory} units on lot`
+                  }
+                  accent="#0891B2"
                 />
                 <ImpactCard
                   icon={<Clock size={14} strokeWidth={2.5} />}

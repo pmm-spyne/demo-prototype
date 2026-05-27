@@ -56,6 +56,22 @@ export const PHOTO_PROCESS_GAP_MAP: Record<string, number> = {
   "No consistent process": 40,
 };
 
+/** Midpoint estimates for monthly photography spend buckets. */
+export const PHOTOGRAPHY_SPEND_MAP: Record<string, number> = {
+  "Under $5K": 4000,
+  "$5K-$10K": 7500,
+  "$10K-$20K": 15000,
+  "$20K-$50K": 35000,
+  "Over $50K": 60000,
+};
+
+export function calcPhotographyCostMonthly(c: DemoConfig): number {
+  if (c.monthlyPhotographySpend && PHOTOGRAPHY_SPEND_MAP[c.monthlyPhotographySpend]) {
+    return PHOTOGRAPHY_SPEND_MAP[c.monthlyPhotographySpend];
+  }
+  return c.perVinCost * c.totalInventory;
+}
+
 export const DEFAULT_DEMO_CONFIG: DemoConfig = {
   aeName: "",
   dealershipName: "",
@@ -105,11 +121,14 @@ export function calcOpportunity(c: DemoConfig) {
   // Break-even day: $3,500 avg front gross / holding cost per day (playbook Ch.6)
   const breakEvenDay = c.holdingCostPerDay > 0 ? Math.round(3500 / c.holdingCostPerDay) : 76;
 
+  const photographyCostMonthly = calcPhotographyCostMonthly(c);
+
   return {
     currentDaysToFrontline,
     pctWithoutPhotos,
     vehiclesNoPhotos,
     mediaGapMonthly,
+    photographyCostMonthly,
     frontlineGapDays,
     frontlineMonthly,
     agedVehicles,

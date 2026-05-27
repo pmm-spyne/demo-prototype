@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   Send, Layers, Globe, Sparkles, Timer, Building2, Wand2,
+  Rocket, Calendar, Search,
 } from "lucide-react";
 import { IMSImportScreen } from "./IMSImportScreen";
 import { ScanningScreen } from "./ScanningScreen";
@@ -400,17 +401,12 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "Real photos replace SmartMatch images the moment you shoot them. No manual cleanup needed",
     ],
     heroNode: <SmartMatchScanHero />,
-    comparison: {
-      beforeLabel: "No photo yet",
-      afterLabel: "Matched media",
-      before: (
-        <div className="w-full h-full bg-[#F3F4F6] flex flex-col items-center justify-center gap-[6px] text-[#9CA3AF]">
-          <ImageOff size={28} strokeWidth={1.8} />
-          <span className="text-[10px] font-semibold text-black/40 uppercase tracking-[0.5px]">Awaiting media</span>
-        </div>
-      ),
-      after: <img src={imgStudioExterior} alt="Matched studio media" className="w-full h-full object-cover" />,
-    },
+    features: [
+      { icon: <Rocket size={16} strokeWidth={2.2} />,   title: "Live Instantly",  tagline: "Skip the shoot. Publish in seconds.", accent: "#4600F2" },
+      { icon: <Calendar size={16} strokeWidth={2.2} />, title: "List Pre-Arrival", tagline: "Live days before the car lands.",       accent: "#10B981" },
+      { icon: <Search size={16} strokeWidth={2.2} />,   title: "Spec Matching",   tagline: "Year, make, model, trim, color.",       accent: "#E91E63" },
+    ],
+    featuresPhase: "success",
     actionLabel: "Match all eligible",
   },
   cgi: {
@@ -501,6 +497,12 @@ const SCORE_BY_STEP = [4.2, 5.3, 6.4, 7.5,  8.4,  9.1];
 // Cumulative holding-cost savings unlocked as each bucket resolves. Numbers
 // roughly correspond to (DTF days saved × hold-cost $/day × inventory volume).
 const HOLDING_COST_BY_STEP = [52_500, 48_200, 43_600, 37_300, 27_900, 10_000];
+
+/** Holding-cost reduction unlocked when bucket `step` (1-based) resolves. */
+function holdingCostSavedAtStep(step: number): number {
+  if (step <= 0 || step >= HOLDING_COST_BY_STEP.length) return 0;
+  return HOLDING_COST_BY_STEP[step - 1] - HOLDING_COST_BY_STEP[step];
+}
 
 const BUCKET_TOTALS: Record<BucketKey, number> = {
   raw: 89,
@@ -768,6 +770,9 @@ export function Demo2({ demoConfig }: Demo2Props) {
   }, []);
 
   const handleScanComplete = useCallback(() => {
+    // Fresh dashboard entry — clear any pitch/filter state left from a prior run or HMR.
+    setActiveBucket(null);
+    setPitchOpen(false);
     setScene("dashboard");
   }, []);
 
@@ -957,8 +962,8 @@ export function Demo2({ demoConfig }: Demo2Props) {
         // When the active bucket has been resolved, compute the lift it gave —
         // the deltas between its step and the step before it.
         const bucketStep = activeBucket ? BUCKET_ORDER.indexOf(activeBucket) + 1 : 0;
-        const dtfSaved    = DTF_BY_STEP[bucketStep - 1] - DTF_BY_STEP[bucketStep];
-        const savedDollars = HOLDING_COST_BY_STEP[bucketStep - 1] - HOLDING_COST_BY_STEP[bucketStep];
+        const dtfSaved     = DTF_BY_STEP[bucketStep - 1] - DTF_BY_STEP[bucketStep];
+        const savedDollars = holdingCostSavedAtStep(bucketStep);
         const successForActive = (activeBucket && completed[activeBucket] && bucketStep > 0) ? {
           dtfSaved,
           scoreGained: SCORE_BY_STEP[bucketStep] - SCORE_BY_STEP[bucketStep - 1],
@@ -971,6 +976,17 @@ export function Demo2({ demoConfig }: Demo2Props) {
             chips: [
               { delta: `${BUCKET_TOTALS.raw}`,                             label: "Listings upgraded"    },
               { delta: "+34%",                                              label: "VDP views uplift"     },
+              { delta: `+${(SCORE_BY_STEP[bucketStep] - SCORE_BY_STEP[bucketStep - 1]).toFixed(1)}`,
+                                                                            label: "Inventory score"      },
+              { delta: `+$${savedDollars.toLocaleString()}`,               label: "Holding cost saved"   },
+            ],
+          } : {}),
+          ...(activeBucket === "nophoto" ? {
+            title:    `${BUCKET_TOTALS.nophoto} vehicles matched and live.`,
+            subtitle: "SmartMatch filled every eligible listing before a camera touched them.",
+            chips: [
+              { delta: `${BUCKET_TOTALS.nophoto}`,                          label: "Vehicles matched"     },
+              { delta: "0 → 4 min",                                         label: "Time to live"         },
               { delta: `+${(SCORE_BY_STEP[bucketStep] - SCORE_BY_STEP[bucketStep - 1]).toFixed(1)}`,
                                                                             label: "Inventory score"      },
               { delta: `+$${savedDollars.toLocaleString()}`,               label: "Holding cost saved"   },
