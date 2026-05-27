@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { Plus, Sparkles, ArrowUp } from "lucide-react";
 import { AppHeader, AppSidebar } from "./AppShell";
-import type { DemoConfig } from "../types/demoConfig";
 
 type Template = {
   id: string;
@@ -82,10 +81,9 @@ function TemplateCard({ template }: { template: Template }) {
 
 interface Props {
   onNavigate?: (label: string) => void;
-  demoConfig?: DemoConfig;
 }
 
-export function MarketingScreen({ onNavigate, demoConfig }: Props) {
+export function MarketingScreen({ onNavigate }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [prompt, setPrompt] = useState("");
 
@@ -103,7 +101,7 @@ export function MarketingScreen({ onNavigate, demoConfig }: Props) {
 
   return (
     <div className="bg-white flex flex-col size-full">
-      <AppHeader dealershipName={demoConfig?.dealershipName} />
+      <AppHeader />
       <div className="flex flex-1 min-h-0">
         <AppSidebar active="Marketing" onNavigate={onNavigate} />
         <div

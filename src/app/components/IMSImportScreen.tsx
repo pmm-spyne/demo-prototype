@@ -4,6 +4,8 @@ import {
   ChevronRight, FolderUp, Check, Sparkles, Layers, Globe, Search, X,
 } from "lucide-react";
 import { AppHeader, AppSidebar } from "./AppShell";
+import { DemoJourneyStrip } from "./DemoJourneyStrip";
+import { calcOpportunity, type DemoConfig } from "../types/demoConfig";
 
 type IMS = {
   id: string;
@@ -210,9 +212,11 @@ interface Props {
   initialImsId?: string;
   /** Dealership name to show in header */
   dealershipName?: string;
+  /** Prospect inputs from demo setup — drives journey strip */
+  demoConfig?: DemoConfig;
 }
 
-export function IMSImportScreen({ onImport, initialImsId, dealershipName }: Props) {
+export function IMSImportScreen({ onImport, initialImsId, dealershipName, demoConfig }: Props) {
   const preSelected = initialImsId
     ? ALL_IMS.find((i) => i.name.toLowerCase() === initialImsId.toLowerCase() || i.id === initialImsId.toLowerCase())
     : undefined;
@@ -241,6 +245,8 @@ export function IMSImportScreen({ onImport, initialImsId, dealershipName }: Prop
     if (cta) gsap.fromTo(cta, { scale: 0.97 }, { scale: 1, duration: 0.25, ease: "back.out(2)" });
   };
 
+  const opp = demoConfig ? calcOpportunity(demoConfig) : null;
+
   return (
     <div className="bg-white flex flex-col size-full">
       <AppHeader dealershipName={dealershipName} />
@@ -248,7 +254,23 @@ export function IMSImportScreen({ onImport, initialImsId, dealershipName }: Prop
         <AppSidebar active="Studio AI" />
 
         <div className="flex-1 overflow-auto bg-[#f9fafb]">
-          <div className="mx-auto max-w-[960px] px-[32px] py-[40px]">
+          <div className="mx-auto max-w-[960px] px-[32px] pt-[28px] pb-[40px]">
+            {opp && demoConfig && (
+              <div className="mb-[24px]">
+                <DemoJourneyStrip
+                  activeStage={1}
+                  completedStages={[]}
+                  dealerName={demoConfig.dealershipName}
+                  prospectNumbers={{
+                    noPhotoVehicles: opp.vehiclesNoPhotos,
+                    holdingCost: demoConfig.holdingCostPerDay,
+                    totalVehicles: demoConfig.totalInventory,
+                    monthlyReclaim: opp.totalMonthly,
+                  }}
+                />
+              </div>
+            )}
+
             {/* Title */}
             <div ref={titleRef} className="text-center mb-[28px]">
               <h1 className="text-[#402387] text-[32px] font-semibold font-['Inter:Semi_Bold',sans-serif] leading-[44px]">

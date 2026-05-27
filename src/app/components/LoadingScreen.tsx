@@ -43,12 +43,12 @@ export function LoadingScreen({ onComplete }: Props) {
       // Start the beam off the left edge
       gsap.set(beam, { x: -43 });
 
-      // Each sweep: 1s, 5 sweeps = 5s total, then call onComplete
+      // Each sweep: 0.85s, 4 sweeps ≈ 3.4s total, then call onComplete
       gsap.to(beam, {
         x: lineWidth,
-        duration: 1,
+        duration: 0.85,
         ease: "linear",
-        repeat: 4,
+        repeat: 3,
         onComplete,
       });
     });

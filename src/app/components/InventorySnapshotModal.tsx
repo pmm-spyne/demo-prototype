@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { ImageOff, Camera, Box } from "lucide-react";
+import { ImageOff } from "lucide-react";
+import imgRawExterior from "../assets/vehicle/raw-exterior-1.jpg";
+import imgCgiTransformed from "../assets/vehicle/cgi-transformed-front.jpg";
 
 interface Props {
   open: boolean;
@@ -65,41 +67,49 @@ function Gauge({ score }: { score: number }) {
 }
 
 function StatCard({
-  icon, iconBg, iconColor, label, value, barColor, barPct,
+  thumb, label, value, barColor, barPct, accent,
 }: {
-  icon: React.ReactNode;
-  iconBg: string;
-  iconColor: string;
+  /** Real thumbnail image, or null for the "no photos" gray placeholder */
+  thumb: string | null;
   label: string;
   value: number;
   barColor: string;
   barPct: number;
+  accent: string;
 }) {
   return (
-    <div className="flex-1 rounded-[14px] bg-white border border-black/5 p-[16px] shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-      <div className="flex items-center gap-[10px]">
-        <div
-          className="size-[28px] rounded-[8px] flex items-center justify-center"
-          style={{ background: iconBg, color: iconColor }}
-        >
-          {icon}
-        </div>
-        <p
-          className="text-[13px] font-semibold font-['Inter:Semi_Bold',sans-serif]"
-          style={{ color: iconColor }}
+    <div className="flex-1 rounded-[14px] bg-white border border-black/8 overflow-hidden shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+      {/* Thumbnail strip — uses Demo 1's raw / studio / CGI assets */}
+      <div className="relative h-[78px] bg-[#F3F4F6] overflow-hidden">
+        {thumb ? (
+          <img src={thumb} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center text-[#9CA3AF]">
+            <ImageOff size={28} strokeWidth={1.6} />
+          </div>
+        )}
+        <span
+          className="absolute top-[8px] left-[8px] inline-flex items-center px-[7px] py-[2px] rounded-full text-[10px] font-bold uppercase tracking-[0.4px] font-['Inter:Bold',sans-serif] text-white"
+          style={{ background: accent }}
         >
           {label}
-        </p>
+        </span>
       </div>
-      <p className="mt-[12px] text-[28px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-none">
-        {value}
-      </p>
-      <p className="mt-[2px] text-[11px] text-black/40 font-['Inter:Regular',sans-serif]">vehicles</p>
-      <div className="mt-[10px] h-[4px] rounded-full bg-[#F1F1F4] overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${Math.min(100, barPct)}%`, backgroundColor: barColor }}
-        />
+      <div className="p-[14px]">
+        <div className="flex items-baseline gap-[5px]">
+          <span className="text-[28px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-none">
+            {value}
+          </span>
+          <span className="text-[11px] text-black/45 font-medium font-['Inter:Medium',sans-serif]">
+            vehicles
+          </span>
+        </div>
+        <div className="mt-[10px] h-[4px] rounded-full bg-[#F1F1F4] overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${Math.min(100, barPct)}%`, backgroundColor: barColor }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -141,7 +151,7 @@ export function InventorySnapshotModal({
     >
       <div
         ref={panelRef}
-        className="bg-white rounded-[20px] w-full max-w-[1080px] max-h-[92vh] overflow-hidden flex flex-col shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
+        className="bg-white rounded-[20px] w-full max-w-[760px] max-h-[92vh] overflow-hidden flex flex-col shadow-[0_30px_80px_rgba(0,0,0,0.35)]"
       >
         {/* Header */}
         <div className="flex items-start justify-between px-[28px] pt-[22px]">
@@ -189,34 +199,31 @@ export function InventorySnapshotModal({
           </div>
         </div>
 
-        {/* Stat cards */}
-        <div className="px-[28px] pt-[16px] flex gap-[14px]">
+        {/* Stat cards — each carries a real thumbnail from Demo 1's transformation assets */}
+        <div className="px-[28px] pt-[16px] flex gap-[12px]">
           <StatCard
-            icon={<ImageOff size={16} />}
-            iconBg="rgba(239,68,68,0.12)"
-            iconColor="#EF4444"
-            label="Vehicles with No Photos"
+            thumb={null}
+            label="No Photos"
             value={noPhotos}
             barColor="#EF4444"
             barPct={(noPhotos / total) * 100}
+            accent="#DC2626"
           />
           <StatCard
-            icon={<Camera size={16} />}
-            iconBg="rgba(16,185,129,0.12)"
-            iconColor="#059669"
-            label="Vehicles with Raw Photos"
+            thumb={imgRawExterior}
+            label="Raw Photos"
             value={rawPhotos}
-            barColor="#10B981"
+            barColor="#F59E0B"
             barPct={(rawPhotos / total) * 100}
+            accent="#D97706"
           />
           <StatCard
-            icon={<Box size={16} />}
-            iconBg="rgba(245,158,11,0.14)"
-            iconColor="#D97706"
-            label="Vehicles with CGI/Stock"
+            thumb={imgCgiTransformed}
+            label="CGI / Stock"
             value={cgiPhotos}
-            barColor="#F59E0B"
+            barColor="#7C3AED"
             barPct={(cgiPhotos / total) * 100}
+            accent="#7C3AED"
           />
         </div>
 

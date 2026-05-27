@@ -10,13 +10,15 @@ interface Props {
   onExport?: () => void;
   onDownload?: () => void;
   onClose: () => void;
+  /** Demo 2 — pitch already shown in side panel, so suppress the auto-pitch deck. */
+  skipDeck?: boolean;
 }
 
 export function SelectionActionBar({
-  open, count, onSmartCampaign, onExport, onDownload, onClose,
+  open, count, onSmartCampaign, onExport, onDownload, onClose, skipDeck = false,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
-  const [deckOpen, setDeckOpen] = useState(true);
+  const [deckOpen, setDeckOpen] = useState(!skipDeck);
   const [deckSeen, setDeckSeen] = useState(false);
 
   useEffect(() => {
@@ -28,8 +30,9 @@ export function SelectionActionBar({
         { y: 80, opacity: 0, scale: 0.96 },
         { y: 0, opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)" }
       );
-      // Only auto-open the pitch deck the first time the bar appears in this session
-      if (!deckSeen) setDeckOpen(true);
+      // Only auto-open the pitch deck the first time the bar appears in this session.
+      // skipDeck (Demo 2) suppresses this entirely.
+      if (!deckSeen && !skipDeck) setDeckOpen(true);
     } else {
       gsap.to(el, { y: 80, opacity: 0, scale: 0.96, duration: 0.25, ease: "power2.in" });
     }

@@ -205,14 +205,19 @@ interface ScanningScreenProps {
   imsName?: string;
   onFinish?: () => void;
   benchmarks?: { daysToFrontline: number; holdingCostPerDay: number };
-  dealershipName?: string;
+  /**
+   * When true, the snapshot modal's Start button calls onFinish directly,
+   * skipping Demo 1's Merchandising → SmartMatch → CGI pitch chain. Used by
+   * Demo 2 where the pitches are triggered from bucket clicks on the dashboard.
+   */
+  snapshotOnly?: boolean;
 }
 
 export function ScanningScreen({
   imsName = "Vincue",
   onFinish,
-  benchmarks = { daysToFrontline: 12, holdingCostPerDay: 46 },
-  dealershipName,
+  benchmarks = { daysToFrontline: 50, holdingCostPerDay: 40 },
+  snapshotOnly = false,
 }: ScanningScreenProps = {}) {
   const statusMessages = buildStatusMessages(imsName);
   const [statusIdx, setStatusIdx] = useState(0);
@@ -247,7 +252,7 @@ export function ScanningScreen({
 
   // After 8s of scanning, surface the inventory snapshot modal
   useEffect(() => {
-    const t = setTimeout(() => setStage("snapshot"), 8000);
+    const t = setTimeout(() => setStage("snapshot"), 3500);
     return () => clearTimeout(t);
   }, []);
 
@@ -333,7 +338,7 @@ export function ScanningScreen({
 
   return (
     <div className="bg-white flex flex-col size-full">
-      <AppHeader dealershipName={dealershipName} />
+      <AppHeader />
       <div className="flex flex-1 min-h-0">
         <AppSidebar />
         {/* Main content */}
@@ -416,7 +421,14 @@ export function ScanningScreen({
         noPhotos={90}
         rawPhotos={67}
         cgiPhotos={134}
-        onStart={() => advanceTo("merchandisingPitch")}
+        onStart={() => {
+          if (snapshotOnly) {
+            setStage("done");
+            onFinish?.();
+          } else {
+            advanceTo("merchandisingPitch");
+          }
+        }}
       />
 
       <MerchandisingPitchModal

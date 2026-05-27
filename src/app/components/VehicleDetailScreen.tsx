@@ -31,7 +31,6 @@ interface Props {
   vehicle: VehicleForVDP;
   onBack: () => void;
   onNavigate?: (label: string) => void;
-  dealershipName?: string;
 }
 
 type TabId = "overview" | "details" | "images" | "spin" | "video";
@@ -534,7 +533,7 @@ function VideoTab() {
 
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
-export function VehicleDetailScreen({ vehicle, onBack, onNavigate, dealershipName }: Props) {
+export function VehicleDetailScreen({ vehicle, onBack, onNavigate }: Props) {
   const [tab, setTab] = useState<TabId>("overview");
   const containerRef = useRef<HTMLDivElement>(null);
   const imagesCount = 31;
@@ -544,7 +543,7 @@ export function VehicleDetailScreen({ vehicle, onBack, onNavigate, dealershipNam
 
   return (
     <div className="bg-white flex flex-col size-full">
-      <AppHeader dealershipName={dealershipName} />
+      <AppHeader />
       <div className="flex flex-1 min-h-0">
         <AppSidebar active="Studio AI" onNavigate={onNavigate} />
         <div ref={containerRef} className="flex-1 bg-[#FAFAFB] overflow-auto">
