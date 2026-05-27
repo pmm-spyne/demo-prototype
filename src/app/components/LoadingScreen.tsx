@@ -4,9 +4,10 @@ import Frame26 from "../../imports/Frame2147240605/Frame2147240605";
 
 interface Props {
   onComplete: () => void;
+  imsName?: string;
 }
 
-export function LoadingScreen({ onComplete }: Props) {
+export function LoadingScreen({ onComplete, imsName = "your IMS" }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const clipRef = useRef<HTMLDivElement>(null);
   const beamRef = useRef<HTMLDivElement>(null);
@@ -62,7 +63,7 @@ export function LoadingScreen({ onComplete }: Props) {
 
   return (
     <div ref={containerRef} className="relative size-full">
-      <Frame26 />
+      <Frame26 imsName={imsName} />
       {/* Animated beam overlay — hidden until positioned by GSAP */}
       <div
         ref={clipRef}

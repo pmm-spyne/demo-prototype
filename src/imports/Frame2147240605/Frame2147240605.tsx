@@ -936,11 +936,11 @@ function Frame22() {
   );
 }
 
-function Frame9() {
+function Frame9({ imsName }: { imsName: string }) {
   return (
     <div className="[word-break:break-word] content-stretch flex flex-col gap-[4px] items-center justify-center not-italic relative shrink-0 whitespace-nowrap">
-      <p className="font-['Inter:Semi_Bold',sans-serif] font-semibold leading-[32px] relative shrink-0 text-[#0a0a0a] text-[24px]">Fetching your inventory from your IMS</p>
-      <p className="font-['Inter:Medium',sans-serif] font-medium leading-[20px] relative shrink-0 text-[#8f8f8f] text-[14px]">{`Feel free to head out. We'll notify you when your vehicles arrive.`}</p>
+      <p className="font-['Inter:Semi_Bold',sans-serif] font-semibold leading-[32px] relative shrink-0 text-[#0a0a0a] text-[24px]">Pulling your inventory from {imsName}</p>
+      <p className="font-['Inter:Medium',sans-serif] font-medium leading-[20px] relative shrink-0 text-[#8f8f8f] text-[14px]">Running a full lot diagnostic. This takes just a moment.</p>
     </div>
   );
 }
@@ -974,42 +974,42 @@ function Frame25() {
   );
 }
 
-function Frame10() {
+function Frame10({ imsName }: { imsName: string }) {
   return (
     <div className="content-stretch flex flex-col gap-[32px] items-center relative shrink-0">
       <Frame22 />
-      <Frame9 />
+      <Frame9 imsName={imsName} />
     </div>
   );
 }
 
-function Frame20() {
+function Frame20({ imsName }: { imsName: string }) {
   return (
     <div className="bg-[#f4f5f8] flex-[1_0_0] h-full min-w-px relative z-[2]">
       <div className="flex flex-col items-center justify-center size-full">
         <div className="content-stretch flex flex-col gap-[24px] items-center justify-center pb-[24px] pt-[16px] px-[24px] relative size-full">
-          <Frame10 />
+          <Frame10 imsName={imsName} />
         </div>
       </div>
     </div>
   );
 }
 
-function Body() {
+function Body({ imsName }: { imsName: string }) {
   return (
     <div className="content-stretch flex flex-[1_0_0] isolate items-start min-h-px relative w-[1440px] z-[1]" data-name="Body">
       <Frame11 />
-      <Frame20 />
+      <Frame20 imsName={imsName} />
     </div>
   );
 }
 
-export default function Frame26() {
+export default function Frame26({ imsName = "your IMS" }: { imsName?: string }) {
   return (
     <div className="bg-white content-stretch flex flex-col isolate items-start relative size-full">
       <Close />
       <Header />
-      <Body />
+      <Body imsName={imsName} />
     </div>
   );
 }

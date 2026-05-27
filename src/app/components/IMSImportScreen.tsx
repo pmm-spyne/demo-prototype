@@ -4,8 +4,7 @@ import {
   ChevronRight, FolderUp, Check, Sparkles, Layers, Globe, Search, X,
 } from "lucide-react";
 import { AppHeader, AppSidebar } from "./AppShell";
-import { DemoJourneyStrip } from "./DemoJourneyStrip";
-import { calcOpportunity, type DemoConfig } from "../types/demoConfig";
+import { type DemoConfig } from "../types/demoConfig";
 
 type IMS = {
   id: string;
@@ -245,7 +244,7 @@ export function IMSImportScreen({ onImport, initialImsId, dealershipName, demoCo
     if (cta) gsap.fromTo(cta, { scale: 0.97 }, { scale: 1, duration: 0.25, ease: "back.out(2)" });
   };
 
-  const opp = demoConfig ? calcOpportunity(demoConfig) : null;
+  const opp = demoConfig ? null : null;
 
   return (
     <div className="bg-white flex flex-col size-full">
@@ -255,29 +254,13 @@ export function IMSImportScreen({ onImport, initialImsId, dealershipName, demoCo
 
         <div className="flex-1 overflow-auto bg-[#f9fafb]">
           <div className="mx-auto max-w-[960px] px-[32px] pt-[28px] pb-[40px]">
-            {opp && demoConfig && (
-              <div className="mb-[24px]">
-                <DemoJourneyStrip
-                  activeStage={1}
-                  completedStages={[]}
-                  dealerName={demoConfig.dealershipName}
-                  prospectNumbers={{
-                    noPhotoVehicles: opp.vehiclesNoPhotos,
-                    holdingCost: demoConfig.holdingCostPerDay,
-                    totalVehicles: demoConfig.totalInventory,
-                    monthlyReclaim: opp.totalMonthly,
-                  }}
-                />
-              </div>
-            )}
-
             {/* Title */}
             <div ref={titleRef} className="text-center mb-[28px]">
               <h1 className="text-[#402387] text-[32px] font-semibold font-['Inter:Semi_Bold',sans-serif] leading-[44px]">
                 Import your inventory
               </h1>
               <p className="mt-[6px] text-[14px] text-black/50 font-['Inter:Medium',sans-serif] font-medium">
-                Where do you want to import your inventory from?
+                Connect your inventory system to sync your full lot and start analyzing.
               </p>
             </div>
 
@@ -430,14 +413,14 @@ export function IMSImportScreen({ onImport, initialImsId, dealershipName, demoCo
                   icon={<Sparkles size={20} />}
                   eyebrow="Smart Campaigns"
                   title="Highlights, billboards & overlays at scale"
-                  body="Bulk-apply branded creatives to vehicle media in one click."
+                  body="Automated visual campaigns fire when cars cross your 30, 45, and 60-day thresholds. No agency. No briefing cycle."
                   accent="#4600f2"
                 />
                 <FeatureBanner
                   icon={<Layers size={20} />}
                   eyebrow="Smart Match"
                   title="Reuse media for same-spec new vehicles"
-                  body="Same trim, same color — matching vehicles share studio media. No reshoots."
+                  body="AI matches incoming vehicles to existing studio shots by trim, color, and spec. New trade-ins go live on day 1, not day 12."
                   accent="#00C488"
                 />
               </div>

@@ -556,7 +556,7 @@ export function Demo2({ demoConfig }: Demo2Props) {
   if (scene === "loading") {
     return (
       <div className="size-full overflow-auto">
-        <LoadingScreen onComplete={handleLoadingComplete} />
+        <LoadingScreen onComplete={handleLoadingComplete} imsName={imsName} />
       </div>
     );
   }

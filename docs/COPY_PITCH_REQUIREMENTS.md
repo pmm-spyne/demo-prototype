@@ -71,13 +71,31 @@ Work through screens in demo flow order. For each screen, the task is to audit a
 ### Screen 2: IMS Import
 
 **File:** `src/app/components/IMSImportScreen.tsx`
-**Status:** Not yet reviewed for copy.
+**Status:** Complete.
+
+**Changes made:**
+- Subtitle updated to: "Connect your inventory system to sync your full lot and start analyzing."
+- Smart Campaigns banner body updated to: "Automated visual campaigns fire when cars cross your 30, 45, and 60-day thresholds. No agency. No briefing cycle."
+- Smart Match banner body updated to: "AI matches incoming vehicles to existing studio shots by trim, color, and spec. New trade-ins go live on day 1, not day 12."
+- DemoJourneyStrip (purple progress banner) removed from this screen.
 
 **Goals:**
 - Reinforce credibility early. The IMS connection moment is where the prospect first sees that Spyne integrates with their existing stack -- this should not feel like a generic OAuth flow.
 - The provider selection (Vincue, VinSolutions, etc.) should show logos and a brief one-liner on what data Spyne pulls from each.
 - Loading/connecting states should use active, specific language: "Pulling inventory from Vincue..." not "Loading...".
 - Any error or fallback states should preserve confidence and give a clear next step.
+
+---
+
+### Screen 2.5: Loading / IMS Sync
+
+**File:** `src/imports/Frame2147240605/Frame2147240605.tsx` (rendered via `src/app/components/LoadingScreen.tsx`)
+**Status:** Complete.
+
+**Changes made:**
+- Headline updated to dynamic: "Pulling your inventory from [IMS name]" -- pulls the selected IMS name from the previous screen.
+- Subheadline updated to: "Running a full lot diagnostic. This takes just a moment."
+- Account manager section confirmed not rendered (dead code, no action needed).
 
 ---
 
@@ -140,7 +158,8 @@ Pull from the brochure (`spyne_studio_ai_brochure_2.html`) as the reference for 
 
 - **Confident, not salesy.** State facts and let the numbers do the work.
 - **Specific, not vague.** "$46/car/day" beats "significant holding costs."
-- **Direct.** Short sentences. No em dashes. No filler phrases like "leverage," "unlock," or "seamlessly."
+- **Direct.** Short sentences. No filler phrases like "leverage," "unlock," or "seamlessly."
+- **No em dashes.** Do not use em dashes (—) in any copy. Use a period or a new sentence instead.
 - **Dealer-first framing.** The hero of the story is always the dealer's lot, not the AI. Spyne is the tool that fixes a problem the dealer already knows they have.
 
 ---
