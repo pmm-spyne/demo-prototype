@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
 import { X, Check, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { StepMetricsPanel, type StepBucketKey } from "./StepMetricsPanel";
+import { type DemoConfig } from "../../types/demoConfig";
 
 export interface PitchFeature {
   icon: React.ReactNode;
@@ -116,6 +118,16 @@ export interface PitchPanelProps extends PitchContent {
   channels?: PitchChannel[];
   selectedChannels?: Set<string>;
   onChannelToggle?: (id: string) => void;
+  /** Dealer inputs from the setup screen — powers the Impact Metrics section */
+  demoConfig?: DemoConfig;
+  /** Number of buckets completed before this pitch opened (for chart history) */
+  completedSteps?: number;
+  /**
+   * Which bucket step this pitch represents.
+   * When set for steps 1–3 (raw / nophoto / cgi), the Impact Metrics section
+   * renders dual bar charts + 3 metric cards powered by dealer input.
+   */
+  metricsStep?: string;
 }
 
 const MAGENTA_GRAD = "linear-gradient(90deg, #FF5C9A 0%, #B651D7 100%)";
@@ -127,6 +139,7 @@ export function PitchPanel(props: PitchPanelProps) {
     proof, heroImage, heroNode, comparison, features, featuresPhase = "pitch", actionLabel,
     channels, selectedChannels, onChannelToggle,
     success,
+    demoConfig, completedSteps, metricsStep,
   } = props;
 
   const showFeatures = Boolean(
@@ -261,52 +274,47 @@ export function PitchPanel(props: PitchPanelProps) {
 
         {/* Body */}
         <div ref={sectionsRef} className="flex-1 overflow-y-auto px-[28px] py-[20px]">
-          {/* Success banner — only when this bucket's transformation has landed.
-              When success is active the body content is hidden; the banner IS the panel. */}
+          {/* Success state — compact header + impact metrics charts replace the old green card */}
           {success && (
-            <div
-              data-section
-              className="relative rounded-[18px] p-[24px] overflow-hidden"
-              style={{
-                background: "linear-gradient(135deg, #10B981 0%, #059669 55%, #047857 100%)",
-                boxShadow: "0 18px 40px rgba(16,185,129,0.35), inset 0 0 0 1px rgba(255,255,255,0.18)",
-              }}
-            >
-              {/* Decorative sparkle accents */}
-              <Sparkles size={130} className="absolute -top-[20px] -right-[12px] text-white/10" strokeWidth={1.4} />
-              <Sparkles size={72}  className="absolute bottom-[12px] right-[56px] text-white/13" strokeWidth={1.4} />
-
-              <div className="relative flex items-center gap-[14px]">
-                <span className="size-[44px] rounded-full bg-white flex items-center justify-center text-[#059669] shrink-0 shadow-[0_6px_18px_rgba(0,0,0,0.20)]">
-                  <Check size={24} strokeWidth={3.2} />
-                </span>
-                <div className="min-w-0">
-                  <p className="inline-flex items-center gap-[6px] px-[8px] py-[2px] rounded-full bg-white/20 text-[9.5px] font-bold uppercase tracking-[1.2px] text-white font-['Inter:Bold',sans-serif]">
-                    <Sparkles size={10} strokeWidth={2.6} />
-                    Win achieved
-                  </p>
-                  <h3 className="mt-[6px] text-[22px] font-bold text-white font-['Inter:Bold',sans-serif] leading-[26px]">
-                    {success.title ?? "Congratulations, transformation complete!"}
-                  </h3>
-                  <p className="mt-[4px] text-[13px] text-white/80 font-['Inter:Regular',sans-serif] leading-[17px]">
-                    {success.subtitle ?? "Here's the lift this step delivered for the dealership."}
-                  </p>
+            <div data-section className="mb-[20px]">
+              {/* Compact win header */}
+              <div
+                className="relative rounded-[14px] p-[18px] overflow-hidden mb-[16px]"
+                style={{
+                  background: "linear-gradient(135deg, #10B981 0%, #059669 55%, #047857 100%)",
+                  boxShadow: "0 12px 32px rgba(16,185,129,0.30), inset 0 0 0 1px rgba(255,255,255,0.15)",
+                }}
+              >
+                <Sparkles size={90} className="absolute -top-[12px] -right-[8px] text-white/10" strokeWidth={1.4} />
+                <div className="relative flex items-center gap-[12px]">
+                  <span className="size-[38px] rounded-full bg-white flex items-center justify-center text-[#059669] shrink-0 shadow-[0_4px_14px_rgba(0,0,0,0.18)]">
+                    <Check size={20} strokeWidth={3.2} />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="inline-flex items-center gap-[5px] px-[7px] py-[1.5px] rounded-full bg-white/20 text-[9px] font-bold uppercase tracking-[1.2px] text-white mb-[4px] font-['Inter:Bold',sans-serif]">
+                      <Sparkles size={9} strokeWidth={2.6} />
+                      Win achieved
+                    </p>
+                    <h3 className="text-[18px] font-bold text-white font-['Inter:Bold',sans-serif] leading-[22px]">
+                      {success.title ?? "Transformation complete."}
+                    </h3>
+                    <p className="mt-[3px] text-[12px] text-white/75 font-['Inter:Regular',sans-serif] leading-[16px]">
+                      {success.subtitle ?? "Here's the lift this step delivered."}
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              {(() => {
-                const chips = success.chips ?? [
-                  { delta: `−${success.dtfSaved}d`,                    label: "Days to frontline" },
-                  { delta: `+${success.scoreGained.toFixed(1)}`,        label: "Inventory score"   },
-                  { delta: `+$${success.savedDollars.toLocaleString()}`, label: "Holding cost"      },
-                ];
-                const cols = chips.length === 4 ? "grid-cols-2" : "grid-cols-3";
-                return (
-                  <div className={`relative mt-[20px] grid ${cols} gap-[10px]`}>
-                    {chips.map((c, i) => <SuccessChip key={i} delta={c.delta} label={c.label} />)}
-                  </div>
-                );
-              })()}
+              {/* Impact metrics — charts + cards */}
+              {demoConfig && metricsStep && (
+                <StepMetricsPanel
+                  bucketKey={metricsStep as StepBucketKey}
+                  completedSteps={completedSteps ?? 0}
+                  demoConfig={demoConfig}
+                  accent={accent}
+                  successMode
+                />
+              )}
             </div>
           )}
 
@@ -584,25 +592,6 @@ function parseLeadingNumber(text: string): ParsedProof {
   };
 }
 
-function SuccessChip({ label, delta }: { label: string; delta: string }) {
-  return (
-    <div
-      className="rounded-[14px] px-[14px] py-[14px]"
-      style={{
-        background: "rgba(255,255,255,0.15)",
-        border: "1px solid rgba(255,255,255,0.22)",
-        backdropFilter: "blur(6px)",
-      }}
-    >
-      <p className="text-[26px] font-bold text-white font-['Inter:Bold',sans-serif] leading-none tracking-tight">
-        {delta}
-      </p>
-      <p className="mt-[6px] text-[10px] font-bold uppercase tracking-[0.6px] text-white/70 font-['Inter:Bold',sans-serif] leading-tight">
-        {label}
-      </p>
-    </div>
-  );
-}
 
 function formatProof(parsed: ParsedProof, current: number): string {
   if (!parsed.hasNumber) return parsed.fullText;

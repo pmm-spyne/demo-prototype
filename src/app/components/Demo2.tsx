@@ -1043,6 +1043,9 @@ export function Demo2({ demoConfig }: Demo2Props) {
             {...pitchContent}
             success={successForActive}
             actionLabel={label}
+            demoConfig={demoConfig}
+            completedSteps={completedCount}
+            metricsStep={activeBucket ?? undefined}
           />
         );
       })()}
