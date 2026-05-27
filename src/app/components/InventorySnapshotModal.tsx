@@ -1,6 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { ImageOff } from "lucide-react";
+import { ImageOff, Info } from "lucide-react";
 import imgRawExterior from "../assets/vehicle/raw-exterior-1.jpg";
 import imgCgiTransformed from "../assets/vehicle/cgi-transformed-front.jpg";
 
@@ -11,6 +11,8 @@ interface Props {
   noPhotos?: number;
   rawPhotos?: number;
   cgiPhotos?: number;
+  holdingCostPerDay?: number;
+  daysToList?: number;
   onStart?: () => void;
 }
 
@@ -67,11 +69,11 @@ function Gauge({ score }: { score: number }) {
 }
 
 function StatCard({
-  thumb, label, value, barColor, barPct, accent,
+  thumb, label, sublabel, value, barColor, barPct, accent,
 }: {
-  /** Real thumbnail image, or null for the "no photos" gray placeholder */
   thumb: string | null;
   label: string;
+  sublabel: string;
   value: number;
   barColor: string;
   barPct: number;
@@ -110,6 +112,9 @@ function StatCard({
             style={{ width: `${Math.min(100, barPct)}%`, backgroundColor: barColor }}
           />
         </div>
+        <p className="mt-[6px] text-[11px] font-medium font-['Inter:Medium',sans-serif]" style={{ color: accent }}>
+          {sublabel}
+        </p>
       </div>
     </div>
   );
@@ -122,10 +127,13 @@ export function InventorySnapshotModal({
   noPhotos = 90,
   rawPhotos = 67,
   cgiPhotos = 134,
+  holdingCostPerDay = 40,
+  daysToList = 12,
   onStart,
 }: Props) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const [tooltipVisible, setTooltipVisible] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -143,6 +151,8 @@ export function InventorySnapshotModal({
   if (!open) return null;
 
   const total = noPhotos + rawPhotos + cgiPhotos || 1;
+  const notReadyCount = noPhotos + rawPhotos;
+  const dailyCostAtRisk = notReadyCount * holdingCostPerDay;
 
   return (
     <div
@@ -169,17 +179,54 @@ export function InventorySnapshotModal({
                 Your inventory snapshot
               </h2>
               <p className="mt-[4px] text-[13px] text-black/55 font-['Inter:Regular',sans-serif]">
-                Every vehicle scored — here's where you stand.
+                Every vehicle scored. Here is what it is costing your lot right now.
               </p>
             </div>
           </div>
-          <div className="shrink-0 text-right">
-            <p className="text-[11px] text-black/40 font-['Inter:Medium',sans-serif] font-medium">
-              Total Inventory:
-            </p>
-            <p className="text-[16px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif]">
-              {totalInventory}
-            </p>
+          <div className="shrink-0 text-right flex gap-[24px] items-start">
+            <div>
+              <p className="text-[11px] text-black/40 font-['Inter:Medium',sans-serif] font-medium">
+                Total Inventory
+              </p>
+              <p className="text-[16px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif]">
+                {totalInventory}
+              </p>
+            </div>
+            <div>
+              <p className="text-[11px] text-black/40 font-['Inter:Medium',sans-serif] font-medium">
+                Avg. time to list
+              </p>
+              <p className="text-[16px] font-bold text-[#F59E0B] font-['Inter:Bold',sans-serif]">
+                {daysToList} days
+              </p>
+            </div>
+            <div className="relative">
+              <p className="text-[11px] text-black/40 font-['Inter:Medium',sans-serif] font-medium flex items-center gap-[4px]">
+                Daily cost at risk
+                <button
+                  type="button"
+                  onMouseEnter={() => setTooltipVisible(true)}
+                  onMouseLeave={() => setTooltipVisible(false)}
+                  className="text-black/30 hover:text-black/60 transition-colors"
+                  aria-label="How this is calculated"
+                >
+                  <Info size={11} />
+                </button>
+              </p>
+              <p className="text-[16px] font-bold text-[#EF4444] font-['Inter:Bold',sans-serif]">
+                ${dailyCostAtRisk.toLocaleString("en-US")} / day
+              </p>
+              {tooltipVisible && (
+                <div className="absolute right-0 top-full mt-[6px] z-10 w-[220px] rounded-[10px] bg-[#0a0a0a] text-white text-[11px] font-['Inter:Regular',sans-serif] px-[12px] py-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.25)] leading-[16px]">
+                  {noPhotos} no-photo + {rawPhotos} raw-photo vehicles = {notReadyCount} not retail-ready
+                  <br />
+                  <span className="text-white/60">{notReadyCount} vehicles × ${holdingCostPerDay}/day = <span className="text-white font-semibold">${dailyCostAtRisk.toLocaleString("en-US")}/day</span></span>
+                  <div className="absolute right-[12px] -top-[5px] w-[10px] h-[5px] overflow-hidden">
+                    <div className="w-[8px] h-[8px] bg-[#0a0a0a] rotate-45 translate-y-[3px] translate-x-[1px]" />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -194,8 +241,8 @@ export function InventorySnapshotModal({
               </span>
             </p>
             <p className="mt-[4px] text-[13px] text-black/55 font-['Inter:Regular',sans-serif]">
-              Most listings have placeholder or no media.
-            </p>
+                Most listings have low-quality or missing media. None are ready to compete online.
+              </p>
           </div>
         </div>
 
@@ -204,6 +251,7 @@ export function InventorySnapshotModal({
           <StatCard
             thumb={null}
             label="No Photos"
+            sublabel="Not listed anywhere"
             value={noPhotos}
             barColor="#EF4444"
             barPct={(noPhotos / total) * 100}
@@ -212,6 +260,7 @@ export function InventorySnapshotModal({
           <StatCard
             thumb={imgRawExterior}
             label="Raw Photos"
+            sublabel="Need studio treatment"
             value={rawPhotos}
             barColor="#F59E0B"
             barPct={(rawPhotos / total) * 100}
@@ -220,6 +269,7 @@ export function InventorySnapshotModal({
           <StatCard
             thumb={imgCgiTransformed}
             label="CGI / Stock"
+            sublabel="Ready to upgrade"
             value={cgiPhotos}
             barColor="#7C3AED"
             barPct={(cgiPhotos / total) * 100}
@@ -238,7 +288,7 @@ export function InventorySnapshotModal({
               boxShadow: "0 6px 16px rgba(70,0,242,0.25)",
             }}
           >
-            Start Transforming
+            Fix my inventory
           </button>
         </div>
       </div>

@@ -12,31 +12,29 @@ import { SmartMatchPitchModal } from "./SmartMatchPitchModal";
 
 // ─── Scanning status ─────────────────────────────────────────────────────────
 
-const buildStatusMessages = (imsName: string) => [
+const buildStatusMessages = () => [
   "Checking inventory",
   "Processing vehicle data",
   "Analyzing media files",
-  "Computing hold costs",
-  `Syncing with ${imsName}`,
-  "Updating pricing data",
+  "Calculating revenue at risk",
 ];
 
-function Spinner() {
+function Spinner({ color = "#10B981" }: { color?: string }) {
   const circ = 2 * Math.PI * 12;
   return (
     <svg className="animate-spin shrink-0" width="34" height="34" viewBox="0 0 34 34">
       <circle cx="17" cy="17" r="12" fill="none" stroke="#E5E7EB" strokeWidth="2.5" />
       <circle
         cx="17" cy="17" r="12" fill="none"
-        stroke="#10B981" strokeWidth="2.5" strokeLinecap="round"
+        stroke={color} strokeWidth="2.5" strokeLinecap="round"
         strokeDasharray={`${circ * 0.35} ${circ * 0.65}`}
       />
     </svg>
   );
 }
 
-function ScanStatusCard({ noPhotos, rawPhotos, cgiPhotos, statusText }: {
-  noPhotos: number; rawPhotos: number; cgiPhotos: number; statusText: string;
+function ScanStatusCard({ noPhotos, rawPhotos, cgiPhotos, totalHoldingCost, statusText }: {
+  noPhotos: number; rawPhotos: number; cgiPhotos: number; totalHoldingCost: number; statusText: string;
 }) {
   return (
     <div className="bg-white rounded-[16px] shadow-[0_1px_8px_rgba(0,0,0,0.07)] mb-5 px-6 py-5 flex items-center gap-0">
@@ -52,13 +50,13 @@ function ScanStatusCard({ noPhotos, rawPhotos, cgiPhotos, statusText }: {
           {statusText}
         </p>
       </div>
-      {/* Stats */}
+      {/* Photo category stats */}
       {[
         { label: "No Photos", count: noPhotos },
         { label: "Raw photos", count: rawPhotos },
         { label: "CGI Photos", count: cgiPhotos },
       ].map((s, i) => (
-        <div key={i} className="flex items-center gap-5 pl-8 border-r last:border-r-0 border-black/8 pr-8">
+        <div key={i} className="flex items-center gap-5 pl-8 border-r border-black/8 pr-8">
           <div>
             <p className="text-[13px] text-[#6B7280] font-medium font-['Inter:Medium',sans-serif]">{s.label}</p>
             <p className="text-[28px] font-bold text-black font-['Inter:Bold',sans-serif] leading-none mt-1">
@@ -69,6 +67,16 @@ function ScanStatusCard({ noPhotos, rawPhotos, cgiPhotos, statusText }: {
           <Spinner />
         </div>
       ))}
+      {/* Holding cost accumulator */}
+      <div className="flex items-center gap-5 pl-8 pr-8">
+        <div className="rounded-[10px] bg-[rgba(239,68,68,0.06)] px-[14px] py-[10px]">
+          <p className="text-[13px] text-[#EF4444] font-semibold font-['Inter:Semi_Bold',sans-serif]">Hold. Cost</p>
+          <p className="text-[28px] font-bold text-[#EF4444] font-['Inter:Bold',sans-serif] leading-none mt-1">
+            ${totalHoldingCost.toLocaleString("en-US")}
+          </p>
+        </div>
+        <Spinner color="#EF4444" />
+      </div>
     </div>
   );
 }
@@ -219,7 +227,7 @@ export function ScanningScreen({
   benchmarks = { daysToFrontline: 50, holdingCostPerDay: 40 },
   snapshotOnly = false,
 }: ScanningScreenProps = {}) {
-  const statusMessages = buildStatusMessages(imsName);
+  const statusMessages = buildStatusMessages();
   const [statusIdx, setStatusIdx] = useState(0);
   const [noPhotos, setNoPhotos] = useState(12);
   const [rawPhotos, setRawPhotos] = useState(102);
@@ -227,6 +235,9 @@ export function ScanningScreen({
   const VISIBLE_ROWS = 6;
   const [vehicles, setVehicles] = useState<Vehicle[]>(() =>
     vehiclePool.slice(0, VISIBLE_ROWS).map((v, i) => ({ ...v, id: i + 1 }))
+  );
+  const [totalHoldingCost, setTotalHoldingCost] = useState(() =>
+    vehiclePool.slice(0, VISIBLE_ROWS).reduce((sum, v) => sum + v.holdCost, 0)
   );
   type Stage =
     | "scanning"
@@ -279,6 +290,7 @@ export function ScanningScreen({
       setNoPhotos(n => n + Math.floor(Math.random() * 3) + 1);
       setRawPhotos(n => n + Math.floor(Math.random() * 5) + 2);
       setCgiPhotos(n => n + Math.floor(Math.random() * 4) + 1);
+      setTotalHoldingCost(prev => prev + newVehicle.holdCost);
     }, 1400);
     return () => clearInterval(t);
   }, [stage]);
@@ -369,6 +381,7 @@ export function ScanningScreen({
               noPhotos={noPhotos}
               rawPhotos={rawPhotos}
               cgiPhotos={cgiPhotos}
+              totalHoldingCost={totalHoldingCost}
               statusText={statusMessages[statusIdx]}
             />
 
@@ -421,6 +434,7 @@ export function ScanningScreen({
         noPhotos={90}
         rawPhotos={67}
         cgiPhotos={134}
+        holdingCostPerDay={benchmarks.holdingCostPerDay}
         onStart={() => {
           if (snapshotOnly) {
             setStage("done");
