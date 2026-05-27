@@ -22,12 +22,12 @@ export interface BucketState {
 export interface Demo2DashboardProps {
   dtf: number;
   score: number;
-  /** Cumulative holding-cost dollars saved across resolved buckets. */
-  saved: number;
+  /** Total holding cost still accruing across unresolved inventory — decreases as buckets resolve. */
+  holdingCost: number;
   /** Persistent delta versus the previous resolved bucket (post-transformation) */
-  dtfUplift: number;   // positive when DTF dropped
-  scoreUplift: number; // positive when score rose
-  savedUplift: number; // positive when more money was saved this step
+  dtfUplift: number;      // positive when DTF dropped
+  scoreUplift: number;    // positive when score rose
+  holdingCostDrop: number; // positive when holding cost fell this step
   buckets: Record<BucketKey, BucketState>;
   activeBucket: BucketKey | null;
   onBucketClick: (b: BucketKey) => void;
@@ -98,7 +98,7 @@ interface FilterCardDef {
 const FILTER_CARDS: FilterCardDef[] = [
   { key: "nophoto",      label: "No Photos",      icon: <ImageOff size={20} strokeWidth={2} />,       color: "#EF4444" },
   { key: "raw",          label: "Raw Photos",     icon: <Camera size={20} strokeWidth={2} />,         color: "#F59E0B" },
-  { key: "cgi",          label: "CGI Photos",     icon: <Wand2 size={20} strokeWidth={2} />,          color: "#7C3AED" },
+  { key: "cgi",          label: "Stock Photos",   icon: <Wand2 size={20} strokeWidth={2} />,          color: "#7C3AED" },
   { key: "unsyndicated", label: "Not Syndicated", icon: <Send size={20} strokeWidth={2} />,           color: "#4600F2" },
   { key: "aging",        label: "Aging Units",    icon: <TrendingDown size={20} strokeWidth={2} />,   color: "#DC2626" },
 ];
@@ -129,7 +129,7 @@ function barsFor(value: number, max: number, higherBetter = false): number[] {
 }
 
 export function Demo2Dashboard({
-  dtf, score, saved, dtfUplift, scoreUplift, savedUplift,
+  dtf, score, holdingCost, dtfUplift, scoreUplift, holdingCostDrop,
   buckets, activeBucket, onBucketClick, onClearBucket,
   rows, highlightIds, transformingIds,
   selectedIds, onToggleSelect, onNavigate,
@@ -257,7 +257,7 @@ export function Demo2Dashboard({
                   Active Inventory
                 </h1>
                 <p className="text-[13px] text-[#6B7280] mt-[2px] font-['Inter:Regular',sans-serif]">
-                  Diagnosed from your IMS scan
+                  Your full merchandising ecosystem, from first scan to final sale
                 </p>
               </div>
               <div className="flex items-center gap-[10px]">
@@ -322,14 +322,56 @@ export function Demo2Dashboard({
                   <p className="text-[12px] font-semibold text-black/55 font-['Inter:Semi_Bold',sans-serif] uppercase tracking-[0.3px]">
                     Days to Frontline
                   </p>
-                  <button
-                    type="button"
-                    title="Average days from IMS arrival to a vehicle being fully listed and live. Lower is better — target ≤ 6 days."
-                    className="ml-auto size-[18px] rounded-full hover:bg-black/5 flex items-center justify-center text-black/40"
-                    aria-label="About Days to Frontline"
-                  >
-                    <Info size={13} strokeWidth={2.2} />
-                  </button>
+                  <div className="ml-auto relative group/dtf-tip">
+                    <button
+                      type="button"
+                      className="size-[18px] rounded-full hover:bg-black/5 flex items-center justify-center text-black/40"
+                      aria-label="About Days to Frontline"
+                    >
+                      <Info size={13} strokeWidth={2.2} />
+                    </button>
+                    <div className="pointer-events-none absolute right-0 top-[22px] z-50 w-[256px] invisible opacity-0 group-hover/dtf-tip:visible group-hover/dtf-tip:opacity-100 transition-opacity duration-150">
+                      <div className="bg-white border border-black/10 rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[14px]">
+                        <p className="text-[11px] font-bold text-[#0a0a0a] uppercase tracking-[0.5px] mb-[10px] font-['Inter:Bold',sans-serif]">How it's calculated</p>
+                        <div className="space-y-[6px]">
+                          <div className="flex items-start gap-[8px]">
+                            <span className="size-[5px] rounded-full bg-[#4600F2] mt-[5px] shrink-0" />
+                            <span className="text-[11px] text-black/70 font-['Inter:Regular',sans-serif]">
+                              Day 0 — IMS intake &amp; appraisal
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-[8px]">
+                            <span className="size-[5px] rounded-full bg-[#4600F2] mt-[5px] shrink-0" />
+                            <span className="text-[11px] text-black/70 font-['Inter:Regular',sans-serif]">
+                              Day 1 — Mechanical recon
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-[8px]">
+                            <span className="size-[5px] rounded-full bg-[#4600F2] mt-[5px] shrink-0" />
+                            <span className="text-[11px] text-black/70 font-['Inter:Regular',sans-serif]">
+                              Day 2 — Cosmetic &amp; detail
+                            </span>
+                          </div>
+                          <div className="flex items-start gap-[8px]">
+                            <span className="size-[5px] rounded-full bg-[#4600F2] mt-[5px] shrink-0" />
+                            <span className="text-[11px] text-black/70 font-['Inter:Regular',sans-serif]">
+                              Day 3 — Photos uploaded &amp; listing live
+                            </span>
+                          </div>
+                        </div>
+                        <div className="mt-[10px] pt-[10px] border-t border-black/6 flex flex-col gap-[4px]">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-black/50 font-['Inter:Regular',sans-serif]">Industry gold standard</span>
+                            <span className="font-bold text-[#059669] font-['Inter:Bold',sans-serif]">&lt; 3 days</span>
+                          </div>
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-black/50 font-['Inter:Regular',sans-serif]">Studio AI target</span>
+                            <span className="font-bold text-[#4600F2] font-['Inter:Bold',sans-serif]">1 day</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-end justify-between gap-[10px] mt-auto pt-[10px]">
                   <div className="flex items-baseline gap-[6px]">
@@ -367,14 +409,53 @@ export function Demo2Dashboard({
                   <p className="text-[12px] font-semibold text-black/55 font-['Inter:Semi_Bold',sans-serif] uppercase tracking-[0.3px]">
                     Inventory Score
                   </p>
-                  <button
-                    type="button"
-                    title="Composite health score (0-10) of media completeness, syndication coverage, and inventory ageing. ≥ 8 is healthy."
-                    className="ml-auto size-[18px] rounded-full hover:bg-black/5 flex items-center justify-center text-black/40"
-                    aria-label="About Inventory Score"
-                  >
-                    <Info size={13} strokeWidth={2.2} />
-                  </button>
+                  <div className="ml-auto relative group/score-tip">
+                    <button
+                      type="button"
+                      className="size-[18px] rounded-full hover:bg-black/5 flex items-center justify-center text-black/40"
+                      aria-label="About Inventory Score"
+                    >
+                      <Info size={13} strokeWidth={2.2} />
+                    </button>
+                    <div className="pointer-events-none absolute right-0 top-[22px] z-50 w-[256px] invisible opacity-0 group-hover/score-tip:visible group-hover/score-tip:opacity-100 transition-opacity duration-150">
+                      <div className="bg-white border border-black/10 rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[14px]">
+                        <p className="text-[11px] font-bold text-[#0a0a0a] uppercase tracking-[0.5px] mb-[10px] font-['Inter:Bold',sans-serif]">Score = avg of 3 signals</p>
+                        <div className="space-y-[8px]">
+                          <div>
+                            <div className="flex justify-between mb-[3px]">
+                              <span className="text-[11px] font-semibold text-black/70 font-['Inter:Semi_Bold',sans-serif]">Media completeness</span>
+                              <span className="text-[11px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif]">Photos, 360°, video</span>
+                            </div>
+                            <div className="h-[4px] rounded-full bg-black/6 overflow-hidden">
+                              <div className="h-full rounded-full bg-[#4600F2]" style={{ width: `${(score / 10) * 100}%` }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-[3px]">
+                              <span className="text-[11px] font-semibold text-black/70 font-['Inter:Semi_Bold',sans-serif]">Syndication coverage</span>
+                              <span className="text-[11px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif]">Channels reached</span>
+                            </div>
+                            <div className="h-[4px] rounded-full bg-black/6 overflow-hidden">
+                              <div className="h-full rounded-full bg-[#10B981]" style={{ width: `${(score / 10) * 90}%` }} />
+                            </div>
+                          </div>
+                          <div>
+                            <div className="flex justify-between mb-[3px]">
+                              <span className="text-[11px] font-semibold text-black/70 font-['Inter:Semi_Bold',sans-serif]">Ageing health</span>
+                              <span className="text-[11px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif]">% past 40-day mark</span>
+                            </div>
+                            <div className="h-[4px] rounded-full bg-black/6 overflow-hidden">
+                              <div className="h-full rounded-full bg-[#F59E0B]" style={{ width: `${(score / 10) * 80}%` }} />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-[10px] pt-[10px] border-t border-black/6 flex justify-between text-[11px]">
+                          <span className="text-black/50 font-['Inter:Regular',sans-serif]">Target score</span>
+                          <span className="font-bold text-[#059669] font-['Inter:Bold',sans-serif]">≥ 8.0 — Healthy</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 <div className="flex items-end justify-between gap-[12px] mt-auto pt-[4px]">
                   <div className="flex items-center gap-[8px]">
@@ -407,42 +488,74 @@ export function Demo2Dashboard({
                 </div>
               </div>
 
-              {/* ── 3. Money Saved (cumulative holding-cost recovery) ──── */}
-              <div className="relative flex-1 rounded-[14px] border border-black/8 bg-white px-[18px] py-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col">
-                <KpiDelta value={saved} direction="up-good" decimals={0} suffix="" />
-                <div className="flex items-center gap-[6px]">
-                  <span className="size-[8px] rounded-full bg-[#059669]" />
-                  <p className="text-[12px] font-semibold text-black/55 font-['Inter:Semi_Bold',sans-serif] uppercase tracking-[0.3px]">
-                    Money Saved
-                  </p>
-                  <button
-                    type="button"
-                    title="Cumulative holding-cost dollars recovered across all resolved buckets so far this session."
-                    className="ml-auto size-[18px] rounded-full hover:bg-black/5 flex items-center justify-center text-black/40"
-                    aria-label="About Money Saved"
-                  >
-                    <Info size={13} strokeWidth={2.2} />
-                  </button>
-                </div>
-                <div className="flex items-end justify-between gap-[10px] mt-auto pt-[10px]">
-                  <div className="flex items-baseline gap-[6px]">
-                    <span className="text-[20px] font-bold text-[#059669] font-['Inter:Bold',sans-serif] leading-none">$</span>
-                    <span
-                      className="text-[40px] font-bold font-['Inter:Bold',sans-serif] leading-none"
-                      style={{ color: "#059669" }}
-                    >
-                      <KpiCounter value={saved} format={(n) => Math.round(n).toLocaleString()} />
-                    </span>
-                    {savedUplift > 0 && (
-                      <UpliftBadge text={`+$${Math.round(savedUplift).toLocaleString()}`} />
-                    )}
+              {/* ── 3. Holding Cost (total accruing — decreases as buckets resolve) ── */}
+              {(() => {
+                const hcStatus = holdingCost > 35_000
+                  ? { label: "High risk",      color: "#B91C1C", bg: "rgba(239,68,68,0.12)",    dot: "#B91C1C" }
+                  : holdingCost > 15_000
+                  ? { label: "Reducing",        color: "#92400E", bg: "rgba(245,158,11,0.14)",   dot: "#D97706" }
+                  : { label: "Under control",   color: "#047857", bg: "rgba(16,185,129,0.14)",   dot: "#047857" };
+                const hcColor = holdingCost > 35_000 ? "#EF4444" : holdingCost > 15_000 ? "#D97706" : "#059669";
+                return (
+                  <div className="relative flex-1 rounded-[14px] border border-black/8 bg-white px-[18px] py-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col">
+                    <KpiDelta value={holdingCost} direction="down-good" decimals={0} />
+                    <div className="flex items-center gap-[6px]">
+                      <span className="size-[8px] rounded-full" style={{ background: hcColor }} />
+                      <p className="text-[12px] font-semibold text-black/55 font-['Inter:Semi_Bold',sans-serif] uppercase tracking-[0.3px]">
+                        Holding Cost
+                      </p>
+                      <div className="ml-auto relative group/hc-tip">
+                        <button
+                          type="button"
+                          className="size-[18px] rounded-full hover:bg-black/5 flex items-center justify-center text-black/40"
+                          aria-label="About Holding Cost"
+                        >
+                          <Info size={13} strokeWidth={2.2} />
+                        </button>
+                        <div className="pointer-events-none absolute right-0 top-[22px] z-50 w-[268px] invisible opacity-0 group-hover/hc-tip:visible group-hover/hc-tip:opacity-100 transition-opacity duration-150">
+                          <div className="bg-white border border-black/10 rounded-[12px] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[14px]">
+                            <p className="text-[11px] font-bold text-[#0a0a0a] uppercase tracking-[0.5px] mb-[10px] font-['Inter:Bold',sans-serif]">How it's calculated</p>
+                            <div className="bg-[#F9FAFB] rounded-[8px] px-[10px] py-[8px] text-[11px] font-['Inter:Regular',sans-serif] text-black/70 space-y-[3px]">
+                              <p><span className="font-semibold text-[#0a0a0a]">$45</span> / day per vehicle</p>
+                              <p><span className="font-semibold text-[#0a0a0a]">× 436</span> vehicles with open issues</p>
+                              <p><span className="font-semibold text-[#0a0a0a]">× avg days</span> sitting without action</p>
+                              <div className="border-t border-black/8 mt-[6px] pt-[6px] flex justify-between items-center">
+                                <span className="text-black/50">Total accruing now</span>
+                                <span className="font-bold text-[#EF4444] font-['Inter:Bold',sans-serif]">${holdingCost.toLocaleString()}</span>
+                              </div>
+                            </div>
+                            <div className="mt-[10px] pt-[10px] border-t border-black/6 space-y-[3px]">
+                              <p className="text-[11px] text-black/50 font-['Inter:Regular',sans-serif]">Includes: raw, no-photo, unsyndicated &amp; aging units</p>
+                              <p className="text-[11px] text-black/50 font-['Inter:Regular',sans-serif]">Decreases as each bucket is resolved</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-end justify-between gap-[10px] mt-auto pt-[10px]">
+                      <div className="flex items-baseline gap-[6px]">
+                        <span className="text-[20px] font-bold font-['Inter:Bold',sans-serif] leading-none" style={{ color: hcColor }}>$</span>
+                        <span
+                          className="text-[40px] font-bold font-['Inter:Bold',sans-serif] leading-none"
+                          style={{ color: hcColor }}
+                        >
+                          <KpiCounter value={holdingCost} format={(n) => Math.round(n).toLocaleString()} />
+                        </span>
+                        {holdingCostDrop > 0 && (
+                          <UpliftBadge text={`−$${Math.round(holdingCostDrop).toLocaleString()}`} />
+                        )}
+                      </div>
+                      <span
+                        className="inline-flex items-center gap-[5px] px-[8px] py-[3px] rounded-full text-[10px] font-bold uppercase tracking-[0.5px] font-['Inter:Bold',sans-serif]"
+                        style={{ color: hcStatus.color, background: hcStatus.bg }}
+                      >
+                        <span className="size-[6px] rounded-full" style={{ background: hcStatus.dot }} />
+                        {hcStatus.label}
+                      </span>
+                    </div>
                   </div>
-                  <span className="inline-flex items-center gap-[5px] px-[8px] py-[3px] rounded-full text-[10px] font-bold uppercase tracking-[0.5px] font-['Inter:Bold',sans-serif] text-[#047857] bg-[rgba(16,185,129,0.14)]">
-                    <span className="size-[6px] rounded-full bg-[#047857]" />
-                    Recovering
-                  </span>
-                </div>
-              </div>
+                );
+              })()}
             </div>
 
             {/* Compact filter row — 5 mini bucket pills on the left,

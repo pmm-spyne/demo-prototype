@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { X, Check, Megaphone, Clock, Users, TrendingDown, ArrowRight } from "lucide-react";
+import { X, Check, Megaphone, Clock, Users, TrendingDown, ArrowRight, Globe, Send, Layers } from "lucide-react";
 import { PLATFORMS, type Platform } from "./publishPlatforms";
 
 interface Props {
@@ -263,6 +263,45 @@ export function PublishedSummaryModal({
                 Studio-grade media live on every channel.
               </p>
             </div>
+          </div>
+
+          {/* What you get */}
+          <p className="mt-[20px] mb-[10px] text-[11px] uppercase tracking-[1px] font-semibold text-black/55 font-['Inter:Semi_Bold',sans-serif]">
+            What you get
+          </p>
+          <div className="grid grid-cols-3 gap-[10px]">
+            {[
+              { icon: <Globe size={15} strokeWidth={2.2} />, title: "Marketplaces", tagline: "AutoTrader, Cars.com, KBB live.", accent: "#4600F2" },
+              { icon: <Send size={15} strokeWidth={2.2} />,  title: "Channel-Aware", tagline: "Per-platform crops and captions.", accent: "#0EA5E9" },
+              { icon: <Layers size={15} strokeWidth={2.2} />, title: "IMS Sync", tagline: "Status pings back automatically.", accent: "#10B981" },
+            ].map((f) => (
+              <div key={f.title} className="bg-white rounded-[12px] border border-black/8 p-[14px]">
+                <span
+                  className="size-[30px] rounded-[8px] flex items-center justify-center mb-[8px]"
+                  style={{ background: `${f.accent}1A`, color: f.accent }}
+                >
+                  {f.icon}
+                </span>
+                <p className="text-[12.5px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-[15px]">{f.title}</p>
+                <p className="mt-[3px] text-[11px] text-black/55 font-['Inter:Regular',sans-serif] leading-[14px]">{f.tagline}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Proven impact */}
+          <div
+            className="mt-[12px] rounded-[12px] p-[16px] border"
+            style={{ background: "rgba(70,0,242,0.05)", borderColor: "rgba(70,0,242,0.15)" }}
+          >
+            <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[4px] font-['Inter:Bold',sans-serif]">
+              Proven impact
+            </p>
+            <p className="text-[28px] font-bold font-['Inter:Bold',sans-serif] leading-none" style={{ color: "#4600F2" }}>
+              11 channels
+            </p>
+            <p className="mt-[6px] text-[12px] text-[#374151] font-['Inter:Regular',sans-serif] leading-snug">
+              Average syndication reach per vehicle after first publish. Marketplaces alone drive ~62% of inbound leads.
+            </p>
           </div>
         </div>
 

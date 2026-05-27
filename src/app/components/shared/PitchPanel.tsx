@@ -25,10 +25,15 @@ export interface PitchContent {
   problem: string;
   /** "How it works" bullets (max 3) */
   bullets: string[];
-  /** ROI number + caption — proof.value animates in */
-  proof: { value: string; caption: string };
+  /** ROI number + caption — proof.value animates in. Omit to hide the section. */
+  proof?: { value: string; caption: string };
   /** Hero image (Demo 1 transformation artwork). */
   heroImage?: string;
+  /**
+   * Custom hero node — overrides heroImage when provided.
+   * Use for animated placeholders (scan GIF, etc.) instead of a static image.
+   */
+  heroNode?: React.ReactNode;
   /**
    * Side-by-side input → output comparison (uses Demo 1's raw/studio/cgi assets).
    * Each side is a ReactNode so the pitch can use an <img> or a "no media yet"
@@ -62,6 +67,15 @@ export interface PitchSuccess {
   scoreGained: number;
   /** Holding-cost dollars recovered this step (positive number) */
   savedDollars: number;
+  /**
+   * Override the default 3 chips with product-specific metrics.
+   * When omitted, falls back to dtfSaved / scoreGained / savedDollars.
+   */
+  chips?: { delta: string; label: string }[];
+  /** Override the banner headline. Defaults to generic congratulations copy. */
+  title?: string;
+  /** Override the banner subtitle. */
+  subtitle?: string;
 }
 
 export interface PitchPanelProps extends PitchContent {
@@ -94,7 +108,7 @@ export function PitchPanel(props: PitchPanelProps) {
   const {
     open, onClose, onAction, actionRunning, completed,
     accent, product, step, tagline, punchline, problem, bullets,
-    proof, heroImage, comparison, features, actionLabel,
+    proof, heroImage, heroNode, comparison, features, actionLabel,
     channels, selectedChannels, onChannelToggle,
     success,
   } = props;
@@ -105,7 +119,7 @@ export function PitchPanel(props: PitchPanelProps) {
 
   // Animate the proof value as a counter when it contains a leading number.
   // (e.g. "+34% VDP views" → tweens 0 → 34 then renders the rest verbatim.)
-  const [parsedProof] = useState(() => parseLeadingNumber(proof.value));
+  const [parsedProof] = useState(() => parseLeadingNumber(proof?.value ?? ""));
 
   useEffect(() => {
     if (!open) return;
@@ -152,8 +166,8 @@ export function PitchPanel(props: PitchPanelProps) {
       );
     }
 
-    // 5. Proof value count-up (only when a leading number was parsed)
-    if (parsedProof.hasNumber && proofValueRef.current) {
+    // 5. Proof value count-up (only when proof is shown and a leading number was parsed)
+    if (proof && parsedProof.hasNumber && proofValueRef.current) {
       const el = proofValueRef.current;
       const target = parsedProof.value;
       const obj = { n: 0 };
@@ -225,56 +239,64 @@ export function PitchPanel(props: PitchPanelProps) {
         {/* Body */}
         <div ref={sectionsRef} className="flex-1 overflow-y-auto px-[28px] py-[20px]">
           {/* Success banner — only when this bucket's transformation has landed.
-              Designed to "shout" — bold green gradient, large headline, big metric
-              tiles, and a sparkle accent so the AE has a clear celebration beat. */}
+              When success is active the body content is hidden; the banner IS the panel. */}
           {success && (
             <div
               data-section
-              className="relative mb-[24px] rounded-[18px] p-[20px] overflow-hidden"
+              className="relative rounded-[18px] p-[24px] overflow-hidden"
               style={{
                 background: "linear-gradient(135deg, #10B981 0%, #059669 55%, #047857 100%)",
                 boxShadow: "0 18px 40px rgba(16,185,129,0.35), inset 0 0 0 1px rgba(255,255,255,0.18)",
               }}
             >
               {/* Decorative sparkle accents */}
-              <Sparkles
-                size={120}
-                className="absolute -top-[18px] -right-[10px] text-white/12"
-                strokeWidth={1.4}
-              />
-              <Sparkles
-                size={64}
-                className="absolute bottom-[8px] right-[60px] text-white/15"
-                strokeWidth={1.4}
-              />
+              <Sparkles size={130} className="absolute -top-[20px] -right-[12px] text-white/10" strokeWidth={1.4} />
+              <Sparkles size={72}  className="absolute bottom-[12px] right-[56px] text-white/13" strokeWidth={1.4} />
 
-              <div className="relative flex items-center gap-[12px]">
-                <span className="size-[40px] rounded-full bg-white flex items-center justify-center text-[#059669] shrink-0 shadow-[0_6px_14px_rgba(0,0,0,0.18)]">
-                  <Check size={22} strokeWidth={3.2} />
+              <div className="relative flex items-center gap-[14px]">
+                <span className="size-[44px] rounded-full bg-white flex items-center justify-center text-[#059669] shrink-0 shadow-[0_6px_18px_rgba(0,0,0,0.20)]">
+                  <Check size={24} strokeWidth={3.2} />
                 </span>
                 <div className="min-w-0">
-                  <p className="inline-flex items-center gap-[6px] px-[8px] py-[2px] rounded-full bg-white/22 text-[9.5px] font-bold uppercase tracking-[1px] text-white font-['Inter:Bold',sans-serif]">
+                  <p className="inline-flex items-center gap-[6px] px-[8px] py-[2px] rounded-full bg-white/20 text-[9.5px] font-bold uppercase tracking-[1.2px] text-white font-['Inter:Bold',sans-serif]">
                     <Sparkles size={10} strokeWidth={2.6} />
                     Win achieved
                   </p>
-                  <h3 className="mt-[6px] text-[20px] font-bold text-white font-['Inter:Bold',sans-serif] leading-[24px]">
-                    Congratulations — transformation complete!
+                  <h3 className="mt-[6px] text-[22px] font-bold text-white font-['Inter:Bold',sans-serif] leading-[26px]">
+                    {success.title ?? "Congratulations, transformation complete!"}
                   </h3>
-                  <p className="mt-[3px] text-[12.5px] text-white/85 font-['Inter:Regular',sans-serif] leading-[16px]">
-                    Here's the lift this step delivered on the dealership's KPIs.
+                  <p className="mt-[4px] text-[13px] text-white/80 font-['Inter:Regular',sans-serif] leading-[17px]">
+                    {success.subtitle ?? "Here's the lift this step delivered for the dealership."}
                   </p>
                 </div>
               </div>
-              <div className="relative mt-[16px] grid grid-cols-3 gap-[8px]">
-                <SuccessChip label="Days to frontline" delta={`−${success.dtfSaved}d`} />
-                <SuccessChip label="Inventory score"   delta={`+${success.scoreGained.toFixed(1)}`} />
-                <SuccessChip label="Holding cost"      delta={`+$${success.savedDollars.toLocaleString()}`} />
-              </div>
+
+              {(() => {
+                const chips = success.chips ?? [
+                  { delta: `−${success.dtfSaved}d`,                    label: "Days to frontline" },
+                  { delta: `+${success.scoreGained.toFixed(1)}`,        label: "Inventory score"   },
+                  { delta: `+$${success.savedDollars.toLocaleString()}`, label: "Holding cost"      },
+                ];
+                const cols = chips.length === 4 ? "grid-cols-2" : "grid-cols-3";
+                return (
+                  <div className={`relative mt-[20px] grid ${cols} gap-[10px]`}>
+                    {chips.map((c, i) => <SuccessChip key={i} delta={c.delta} label={c.label} />)}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
-          {/* Hero artwork — Demo 1 transformation visual */}
-          {heroImage && (
+          {/* All body content is hidden when the success state is active.
+              The congratulations banner + metrics tell the full completion story. */}
+
+          {/* Hero artwork — animated node OR static image */}
+          {!success && heroNode && (
+            <div data-section className="mb-[20px]">
+              {heroNode}
+            </div>
+          )}
+          {!success && !heroNode && heroImage && (
             <div
               data-section
               className="mb-[20px] relative rounded-[14px] overflow-hidden border border-black/8 bg-[#FAFAFB]"
@@ -295,72 +317,45 @@ export function PitchPanel(props: PitchPanelProps) {
             </div>
           )}
 
-          {/* Input → Output comparison (uses Demo 1's raw/studio/cgi assets) */}
-          {comparison && (
-            <div data-section className="mb-[20px]">
-              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[10px] font-['Inter:Bold',sans-serif]">
-                Input → Output
+
+          {/* Problem */}
+          {!success && (
+            <div data-section className="mb-[18px]">
+              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[6px] font-['Inter:Bold',sans-serif]">
+                The problem
               </p>
-              <div className="grid grid-cols-[1fr_18px_1fr] items-center gap-[6px]">
-                <div className="rounded-[10px] overflow-hidden border border-black/10 bg-[#F9FAFB]">
-                  <div className="px-[8px] py-[5px] bg-[#F3F4F6] border-b border-black/5">
-                    <p className="text-[9px] font-bold uppercase tracking-[0.5px] text-black/55">
-                      {comparison.beforeLabel ?? "Input"}
-                    </p>
-                  </div>
-                  <div className="h-[110px] flex items-center justify-center bg-white overflow-hidden">
-                    {comparison.before}
-                  </div>
-                </div>
-                <ArrowRight size={16} className="mx-auto" style={{ color: accent }} strokeWidth={2.5} />
-                <div className="rounded-[10px] overflow-hidden border" style={{ borderColor: `${accent}55` }}>
-                  <div className="px-[8px] py-[5px] border-b" style={{ background: `${accent}10`, borderColor: `${accent}20` }}>
-                    <p className="text-[9px] font-bold uppercase tracking-[0.5px]" style={{ color: accent }}>
-                      {comparison.afterLabel ?? "Output"}
-                    </p>
-                  </div>
-                  <div className="h-[110px] flex items-center justify-center bg-white overflow-hidden">
-                    {comparison.after}
-                  </div>
-                </div>
-              </div>
+              <p className="text-[13px] text-[#1F2937] leading-[1.55] font-['Inter:Regular',sans-serif]">
+                {problem}
+              </p>
             </div>
           )}
 
-          {/* Problem */}
-          <div data-section className="mb-[18px]">
-            <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[6px] font-['Inter:Bold',sans-serif]">
-              The problem
-            </p>
-            <p className="text-[13px] text-[#1F2937] leading-[1.55] font-['Inter:Regular',sans-serif]">
-              {problem}
-            </p>
-          </div>
-
           {/* How it works */}
-          <div data-section className="mb-[20px]">
-            <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[8px] font-['Inter:Bold',sans-serif]">
-              How it works
-            </p>
-            <ul className="space-y-[8px]">
-              {bullets.slice(0, 3).map((b, i) => (
-                <li key={i} className="flex items-start gap-[10px]">
-                  <span
-                    className="size-[18px] rounded-full flex items-center justify-center shrink-0 mt-[1px]"
-                    style={{ background: `${accent}1A`, color: accent }}
-                  >
-                    <Check size={11} strokeWidth={3} />
-                  </span>
-                  <span className="text-[13px] text-[#1F2937] leading-[1.5] font-['Inter:Medium',sans-serif] font-medium">
-                    {b}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {!success && (
+            <div data-section className="mb-[20px]">
+              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[8px] font-['Inter:Bold',sans-serif]">
+                How it works
+              </p>
+              <ul className="space-y-[8px]">
+                {bullets.slice(0, 3).map((b, i) => (
+                  <li key={i} className="flex items-start gap-[10px]">
+                    <span
+                      className="size-[18px] rounded-full flex items-center justify-center shrink-0 mt-[1px]"
+                      style={{ background: `${accent}1A`, color: accent }}
+                    >
+                      <Check size={11} strokeWidth={3} />
+                    </span>
+                    <span className="text-[13px] text-[#1F2937] leading-[1.5] font-['Inter:Medium',sans-serif] font-medium">
+                      {b}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Feature cards — Demo 1 grid style */}
-          {features && features.length > 0 && (
+          {!success && features && features.length > 0 && (
             <div data-section className="mb-[20px]">
               <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[10px] font-['Inter:Bold',sans-serif]">
                 What you get
@@ -392,7 +387,7 @@ export function PitchPanel(props: PitchPanelProps) {
 
           {/* Inline channel picker — used by the syndication pitch so the AE
               picks publishing channels without leaving the side panel. */}
-          {channels && selectedChannels && onChannelToggle && (
+          {!success && channels && selectedChannels && onChannelToggle && (
             <div data-section className="mb-[20px]">
               <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[8px] font-['Inter:Bold',sans-serif]">
                 Where do you want to publish?
@@ -437,27 +432,29 @@ export function PitchPanel(props: PitchPanelProps) {
             </div>
           )}
 
-          {/* Proof / ROI */}
-          <div
-            data-section
-            className="rounded-[12px] p-[16px] border"
-            style={{ background: `${accent}08`, borderColor: `${accent}25` }}
-          >
-            <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[4px] font-['Inter:Bold',sans-serif]">
-              Proven impact
-            </p>
-            <p
-              className="text-[28px] font-bold font-['Inter:Bold',sans-serif] leading-none"
-              style={{ color: accent }}
+          {/* Proof / ROI — only rendered when a proof value is supplied and not in success state */}
+          {!success && proof && (
+            <div
+              data-section
+              className="rounded-[12px] p-[16px] border"
+              style={{ background: `${accent}08`, borderColor: `${accent}25` }}
             >
-              <span ref={proofValueRef}>
-                {parsedProof.hasNumber ? formatProof(parsedProof, 0) : proof.value}
-              </span>
-            </p>
-            <p className="mt-[6px] text-[12px] text-[#374151] font-['Inter:Regular',sans-serif] leading-snug">
-              {proof.caption}
-            </p>
-          </div>
+              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[4px] font-['Inter:Bold',sans-serif]">
+                Proven impact
+              </p>
+              <p
+                className="text-[28px] font-bold font-['Inter:Bold',sans-serif] leading-none"
+                style={{ color: accent }}
+              >
+                <span ref={proofValueRef}>
+                  {parsedProof.hasNumber ? formatProof(parsedProof, 0) : proof.value}
+                </span>
+              </p>
+              <p className="mt-[6px] text-[12px] text-[#374151] font-['Inter:Regular',sans-serif] leading-snug">
+                {proof.caption}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Sticky footer CTA */}
@@ -522,11 +519,18 @@ function parseLeadingNumber(text: string): ParsedProof {
 
 function SuccessChip({ label, delta }: { label: string; delta: string }) {
   return (
-    <div className="rounded-[12px] bg-white px-[12px] py-[11px] shadow-[0_4px_10px_rgba(0,0,0,0.10)]">
-      <p className="text-[22px] font-bold text-[#047857] font-['Inter:Bold',sans-serif] leading-none tracking-tight">
+    <div
+      className="rounded-[14px] px-[14px] py-[14px]"
+      style={{
+        background: "rgba(255,255,255,0.15)",
+        border: "1px solid rgba(255,255,255,0.22)",
+        backdropFilter: "blur(6px)",
+      }}
+    >
+      <p className="text-[26px] font-bold text-white font-['Inter:Bold',sans-serif] leading-none tracking-tight">
         {delta}
       </p>
-      <p className="mt-[5px] text-[10px] font-bold uppercase tracking-[0.5px] text-black/55 font-['Inter:Bold',sans-serif] leading-tight">
+      <p className="mt-[6px] text-[10px] font-bold uppercase tracking-[0.6px] text-white/70 font-['Inter:Bold',sans-serif] leading-tight">
         {label}
       </p>
     </div>

@@ -102,11 +102,28 @@ Work through screens in demo flow order. For each screen, the task is to audit a
 ### Screen 3: Scanning
 
 **File:** `src/app/components/ScanningScreen.tsx`
-**Status:** Not yet reviewed for copy.
+**Status:** Complete.
+
+**Changes made:**
+- Rotating status messages reduced to 4 and updated:
+  1. "Checking inventory"
+  2. "Processing vehicle data"
+  3. "Analyzing media files"
+  4. "Calculating revenue at risk"
+- Fourth bucket added to the scan status card: "Hold. Cost" -- a live red accumulator that increments with each vehicle scanned, initialized from the starting vehicle pool and styled distinctly from the photo-category buckets.
+- "accumulating" sublabel removed from the holding cost bucket.
+
+**Inventory Snapshot Modal (`src/app/components/InventorySnapshotModal.tsx`) -- also updated as part of this screen:**
+- Modal subtitle updated to: "Every vehicle scored. Here is what it is costing your lot right now."
+- Header now shows three metrics: Total Inventory, Avg. time to list (12 days, amber), Daily cost at risk (red, dynamic from holdingCostPerDay x not-ready vehicles).
+- Hovering the info icon on "Daily cost at risk" shows a tooltip explaining the calculation tied to the dealer's Screen 1 input.
+- Score description updated to: "Most listings have low-quality or missing media. None are ready to compete online."
+- Stat card sublabels added: "Not listed anywhere" (No Photos), "Need studio treatment" (Raw Photos), "Ready to upgrade" (CGI / Stock).
+- CTA updated from "Start Transforming" to "Fix my inventory".
 
 **Goals:**
 - The scan is a theatrical moment in the demo -- it should feel like the AI is doing real diagnostic work on the prospect's lot.
-- Each status message shown during the scan ("Computing hold costs", "Analysing media gaps", etc.) should be specific enough to sound technical but clear enough for a non-technical dealer to follow.
+- Each status message shown during the scan should be specific enough to sound technical but clear enough for a non-technical dealer to follow.
 - The scan results reveal (score, vehicle count, gap breakdown) should be framed as a diagnosis: "here is the state of your lot right now."
 - The progression from raw numbers to financial impact should happen on this screen, priming the dashboard reveal.
 

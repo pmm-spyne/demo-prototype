@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
 import {
-  Image as ImageIcon, RotateCw, Film, Rocket, Calendar, Search,
   Send, Layers, Globe, Sparkles, Timer, Building2, Wand2,
 } from "lucide-react";
 import { IMSImportScreen } from "./IMSImportScreen";
@@ -15,8 +14,6 @@ import { SmartCampaignModal } from "./SmartCampaignModal";
 import { PublishModal } from "./PublishModal";
 import type { Row } from "./shared/VehicleRow";
 import { PLATFORMS } from "./publishPlatforms";
-import imgMerchandising from "../assets/merchandising-example.png";
-import imgSmartMatch from "../assets/smart-match-example.png";
 import imgCampaigns from "../assets/smart-campaigns-example.png";
 import imgRawExterior from "../assets/vehicle/raw-exterior-1.jpg";
 import imgStudioExterior from "../assets/vehicle/studio-exterior-1.jpg";
@@ -25,53 +22,384 @@ import imgCgiTransformed from "../assets/vehicle/cgi-transformed-front.jpg";
 import { ImageOff } from "lucide-react";
 import { calcOpportunity, type DemoConfig } from "../types/demoConfig";
 
-// ─── Pitch content — uses Demo 1's hero artwork and feature card structure so
-//     the Demo 2 side panel feels like an extension of the Demo 1 transformation
-//     journey (same imagery, same product story).
+// ─── SmartMatch scan animation ────────────────────────────────────────────────
+// Shows a blank placeholder with a VIN number, then a purple scan line sweeps
+// left→right and the matched car image reveals — same 16/9 ratio as RawScanHero.
+const SMART_MATCH_CSS = `
+@keyframes smReveal {
+  0%, 12%   { clip-path: inset(0 100% 0 0); }
+  58%, 100% { clip-path: inset(0 0% 0 0); }
+}
+@keyframes smScanLine {
+  0%, 12%   { left: 0%; opacity: 1; }
+  58%       { left: 100%; opacity: 0; }
+  62%       { left: 0%; opacity: 0; }
+  70%, 100% { left: 0%; opacity: 0; }
+}
+@keyframes smScanPulse {
+  0%, 100% { box-shadow: 0 0 8px 3px rgba(127,106,242,0.55), 0 0 22px 6px rgba(127,106,242,0.22); }
+  50%      { box-shadow: 0 0 14px 5px rgba(127,106,242,0.85), 0 0 34px 10px rgba(127,106,242,0.42); }
+}
+@keyframes smVinGlow {
+  0%, 8%    { color: rgba(156,163,175,0.6); text-shadow: none; }
+  28%, 48%  { color: rgba(167,139,250,1); text-shadow: 0 0 20px rgba(127,106,242,0.8), 0 0 40px rgba(127,106,242,0.4); }
+  62%, 100% { color: rgba(255,255,255,0.85); text-shadow: none; }
+}
+@keyframes smFoundBadge {
+  0%, 42%   { opacity: 0; transform: scale(0.85); }
+  58%, 100% { opacity: 1; transform: scale(1); }
+}
+`;
+
+function SmartMatchScanHero() {
+  return (
+    <>
+      <style>{SMART_MATCH_CSS}</style>
+      <div
+        className="relative w-full overflow-hidden rounded-[14px] border border-black/8 bg-[#111318]"
+        style={{ aspectRatio: "16/9" }}
+      >
+        {/* Base layer: "No Photo" placeholder with VIN number */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-[14px]">
+          <ImageOff size={36} className="text-white/20" strokeWidth={1.5} />
+          <div
+            className="font-mono text-[13px] font-bold tracking-[3px] uppercase px-[12px] py-[6px] rounded-[6px] border border-white/10 bg-white/5"
+            style={{
+              animation: "smVinGlow 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite",
+              color: "rgba(156,163,175,0.6)",
+            }}
+          >
+            VIN5N1AT3CBXSC
+          </div>
+        </div>
+
+        {/* Reveal layer: matched car image */}
+        <div
+          className="absolute inset-0"
+          style={{ animation: "smReveal 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite" }}
+        >
+          <img
+            src={imgStudioExterior}
+            alt="Matched media"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* Glowing purple scan line */}
+        <div
+          className="absolute inset-y-0 w-[2px]"
+          style={{
+            background:
+              "linear-gradient(180deg, transparent 0%, #7F6AF2 18%, #B651D7 50%, #7F6AF2 82%, transparent 100%)",
+            animation:
+              "smScanLine 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite, smScanPulse 1.1s ease-in-out infinite",
+          }}
+        />
+
+        {/* Top-left: scanning status */}
+        <div className="absolute top-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
+          <span className="size-[5px] rounded-full bg-[#A78BFA] animate-pulse" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
+            Scanning VIN
+          </span>
+        </div>
+
+        {/* Top-right: VIN Found badge (appears after scan) */}
+        <div
+          className="absolute top-[10px] right-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px]"
+          style={{
+            background: "rgba(127,106,242,0.82)",
+            backdropFilter: "blur(4px)",
+            animation: "smFoundBadge 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite",
+          }}
+        >
+          <span className="size-[5px] rounded-full bg-white" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
+            VIN Found
+          </span>
+        </div>
+
+        {/* Bottom-left: No photo yet */}
+        <div className="absolute bottom-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
+          <span className="size-[5px] rounded-full bg-[#9CA3AF]" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-[#D1D5DB] font-['Inter:Bold',sans-serif]">
+            No photo yet
+          </span>
+        </div>
+
+        {/* Bottom-right: Matched media badge (appears after scan) */}
+        <div
+          className="absolute bottom-[10px] right-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px]"
+          style={{
+            background: "rgba(127,106,242,0.82)",
+            backdropFilter: "blur(4px)",
+            animation: "smFoundBadge 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite",
+          }}
+        >
+          <span className="size-[5px] rounded-full bg-white" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
+            Matched media
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Stock photo grid animation ──────────────────────────────────────────────
+// 3×2 grid of inconsistent stock photo cards — each sweeps through a purple
+// scan line and reveals a clean, uniform Studio AI output.
+const STOCK_GRID_CSS = `
+@keyframes sgReveal {
+  0%, 12%   { clip-path: inset(0 100% 0 0); }
+  58%, 100% { clip-path: inset(0 0% 0 0); }
+}
+@keyframes sgScanLine {
+  0%, 12%   { left: 0%; opacity: 1; }
+  58%       { left: 100%; opacity: 0; }
+  60%       { left: 0%; opacity: 0; }
+  68%, 100% { left: 0%; opacity: 0; }
+}
+@keyframes sgScanPulse {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(124,58,237,0.6), 0 0 16px 5px rgba(124,58,237,0.2); }
+  50%      { box-shadow: 0 0 10px 4px rgba(124,58,237,0.9), 0 0 26px 8px rgba(124,58,237,0.4); }
+}
+@keyframes sgBadgeFade {
+  0%, 52%   { opacity: 0; transform: scale(0.8); }
+  68%, 100% { opacity: 1; transform: scale(1); }
+}
+@keyframes sgLabelFade {
+  0%, 48%   { opacity: 1; }
+  62%, 100% { opacity: 0; }
+}
+`;
+
+function StockPhotoGridHero() {
+  const DURATION = "5s";
+  const cards = [
+    { delay: "0s",     before: imgCgiFront,    after: imgCgiTransformed,  filter: "hue-rotate(25deg) brightness(1.15)",   issue: "Watermark"    },
+    { delay: "0.55s",  before: imgRawExterior, after: imgStudioExterior,  filter: "grayscale(0.35) contrast(1.1)",        issue: "Off-brand"    },
+    { delay: "1.1s",   before: imgCgiFront,    after: imgCgiTransformed,  filter: "sepia(0.3) brightness(1.05)",          issue: "Poor crop"    },
+    { delay: "1.65s",  before: imgRawExterior, after: imgStudioExterior,  filter: "hue-rotate(-18deg) saturate(1.35)",    issue: "Different BG" },
+    { delay: "2.2s",   before: imgCgiFront,    after: imgCgiTransformed,  filter: "brightness(1.22) contrast(1.12)",      issue: "Inconsistent" },
+    { delay: "2.75s",  before: imgRawExterior, after: imgStudioExterior,  filter: "brightness(0.82) saturate(0.75)",      issue: "Off-angle"    },
+  ];
+
+  return (
+    <>
+      <style>{STOCK_GRID_CSS}</style>
+      <div className="w-full rounded-[14px] border border-black/8 bg-[#111318] overflow-hidden p-[10px]">
+        <div className="grid grid-cols-3 gap-[5px]">
+          {cards.map((card, i) => (
+            <div
+              key={i}
+              className="relative overflow-hidden rounded-[7px]"
+              style={{ aspectRatio: "4/3" }}
+            >
+              {/* Base: inconsistent stock image */}
+              <img
+                src={card.before}
+                alt="Inconsistent stock photo"
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ filter: card.filter }}
+              />
+
+              {/* Issue label — fades out when processed */}
+              <div
+                className="absolute top-[4px] left-[4px] px-[4px] py-[1.5px] rounded-[3px] text-[7.5px] font-bold text-white uppercase tracking-[0.4px] font-['Inter:Bold',sans-serif]"
+                style={{
+                  background: "rgba(239,68,68,0.85)",
+                  animation: `sgLabelFade ${DURATION} ease-in-out ${card.delay} infinite`,
+                }}
+              >
+                {card.issue}
+              </div>
+
+              {/* Reveal layer: Studio AI processed image */}
+              <div
+                className="absolute inset-0"
+                style={{ animation: `sgReveal ${DURATION} ease-in-out ${card.delay} infinite` }}
+              >
+                <img
+                  src={card.after}
+                  alt="Studio AI processed"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              {/* Glowing purple scan line */}
+              <div
+                className="absolute inset-y-0 w-[1.5px]"
+                style={{
+                  background:
+                    "linear-gradient(180deg, transparent 0%, #7C3AED 20%, #A855F7 50%, #7C3AED 80%, transparent 100%)",
+                  animation: `sgScanLine ${DURATION} ease-in-out ${card.delay} infinite, sgScanPulse 1s ease-in-out infinite`,
+                }}
+              />
+
+              {/* Studio AI badge — fades in after scan */}
+              <div
+                className="absolute bottom-[4px] right-[4px] flex items-center gap-[3px] px-[5px] py-[2px] rounded-[3px] text-[7.5px] font-bold text-white font-['Inter:Bold',sans-serif]"
+                style={{
+                  background: "rgba(124,58,237,0.88)",
+                  backdropFilter: "blur(4px)",
+                  animation: `sgBadgeFade ${DURATION} ease-in-out ${card.delay} infinite`,
+                }}
+              >
+                ✓ Studio AI
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Status bar */}
+        <div className="mt-[8px] flex items-center justify-between px-[1px]">
+          <div className="flex items-center gap-[5px]">
+            <span className="size-[5px] rounded-full bg-[#7C3AED] animate-pulse" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.9px] text-white/65 font-['Inter:Bold',sans-serif]">
+              Standardising stock photos
+            </span>
+          </div>
+          <span className="text-[9px] font-bold text-[#7C3AED] font-['Inter:Bold',sans-serif]">
+            134 vehicles
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Raw scan animation ───────────────────────────────────────────────────────
+// CSS keyframes injected once — simulates a Studio AI scan pass:
+// a glowing magenta line sweeps left→right, revealing the studio output.
+const RAW_SCAN_CSS = `
+@keyframes studioReveal {
+  0%,8%    { clip-path: inset(0 100% 0 0); }
+  52%,62%  { clip-path: inset(0 0% 0 0); }
+  92%,100% { clip-path: inset(0 100% 0 0); }
+}
+@keyframes scanLineMove {
+  0%,8%    { left: 0%; opacity: 1; }
+  52%,62%  { left: 100%; opacity: 0; }
+  63%      { left: 0%; opacity: 0; }
+  70%,100% { left: 0%; opacity: 1; }
+}
+@keyframes scanPulse {
+  0%,100% { box-shadow: 0 0 8px 3px rgba(233,30,99,0.55), 0 0 22px 6px rgba(233,30,99,0.22); }
+  50%     { box-shadow: 0 0 14px 5px rgba(233,30,99,0.85), 0 0 34px 10px rgba(233,30,99,0.42); }
+}
+`;
+
+function RawScanHero() {
+  return (
+    <>
+      <style>{RAW_SCAN_CSS}</style>
+      <div
+        className="relative w-full overflow-hidden rounded-[14px] border border-black/8 bg-[#0d0d0d]"
+        style={{ aspectRatio: "16/9" }}
+      >
+        {/* Base layer: raw lot photo */}
+        <img
+          src={imgRawExterior}
+          alt="Raw lot photo"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+
+        {/* Reveal layer: studio output, unmasked by scan line */}
+        <div
+          className="absolute inset-0"
+          style={{ animation: "studioReveal 4s cubic-bezier(0.45,0,0.55,1) 1.2s infinite" }}
+        >
+          <img
+            src={imgStudioExterior}
+            alt="Studio output"
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        {/* Glowing scan line */}
+        <div
+          className="absolute inset-y-0 w-[2px]"
+          style={{
+            background:
+              "linear-gradient(180deg, transparent 0%, #E91E63 18%, #FF5C9A 50%, #E91E63 82%, transparent 100%)",
+            animation:
+              "scanLineMove 4s cubic-bezier(0.45,0,0.55,1) 1.2s infinite, scanPulse 1.1s ease-in-out infinite",
+          }}
+        />
+
+        {/* Bottom labels */}
+        <div className="absolute bottom-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
+          <span className="size-[5px] rounded-full bg-[#9CA3AF]" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-[#D1D5DB] font-['Inter:Bold',sans-serif]">
+            Raw lot photo
+          </span>
+        </div>
+        <div
+          className="absolute bottom-[10px] right-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px]"
+          style={{ background: "rgba(233,30,99,0.82)", backdropFilter: "blur(4px)" }}
+        >
+          <span className="size-[5px] rounded-full bg-white" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
+            Studio AI output
+          </span>
+        </div>
+
+        {/* Top-right Studio AI badge */}
+        <div
+          className="absolute top-[10px] right-[10px] px-[10px] py-[5px] rounded-[8px] text-[11px] font-bold text-white font-['Inter:Bold',sans-serif]"
+          style={{
+            background: "linear-gradient(90deg, #FF5C9A 0%, #B651D7 100%)",
+            boxShadow: "0 4px 14px rgba(182,81,215,0.45)",
+          }}
+        >
+          Studio AI
+        </div>
+
+        {/* Top-left scanning indicator */}
+        <div className="absolute top-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
+          <span className="size-[5px] rounded-full bg-[#E91E63] animate-pulse" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
+            Scanning
+          </span>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Pitch content ─────────────────────────────────────────────────────────────
 const PITCHES: Record<BucketKey, PitchContent> = {
   raw: {
-    accent: "#F59E0B",
-    step: "Step 01 · Smart Suite · Merchandising",
+    accent: "#E91E63",
+    step: "Step 01 · Studio AI · Smart Shoot",
     product: "Studio AI.",
-    punchline: "Studio media, without the studio.",
-    tagline: "Smartphone in, brand-perfect media out — in minutes.",
+    punchline: "Studio-grade listings. No studio required.",
+    tagline: "Any phone. Any lot. Consistent, professional media every time.",
     problem:
-      "89 vehicles have raw photos sitting in the IMS — parking-lot backgrounds, mixed lighting, no 360. They're listable, but they don't convert.",
+      "Raw lot photos have mixed backgrounds, patchy lighting, and no 360 or video. Buyers scroll past listings that look like they were shot in a hurry.",
     bullets: [
-      "Studio backgrounds applied to existing photos with 1-click",
-      "360° spin + dealership-branded video tour auto-generated",
-      "Shadow, plate-blur, and color-correct baked into every output",
+      "Click in seconds with the Studio AI app, or import directly from your inventory",
+      "Studio AI generates consistent, engaging visuals: studio images, car tours, and videos",
+      "Realistic studio-grade listings in minutes, with shadow, plate blur, and color correction baked into every output",
     ],
-    proof: { value: "+34% VDP views", caption: "Average lift on listings upgraded with Spyne studio backgrounds vs. raw lot photos." },
-    heroImage: imgMerchandising,
-    comparison: {
-      beforeLabel: "Raw lot photo",
-      afterLabel: "Studio output",
-      before: <img src={imgRawExterior} alt="Raw lot photo" className="w-full h-full object-cover" />,
-      after:  <img src={imgStudioExterior} alt="Studio output" className="w-full h-full object-cover" />,
-    },
-    features: [
-      { icon: <ImageIcon size={16} strokeWidth={2.2} />, title: "Studio Images",  tagline: "Auto-enhanced, background-removed.", accent: "#3B82F6" },
-      { icon: <RotateCw size={16} strokeWidth={2.2} />,  title: "360° Car Tours", tagline: "Stitched and ready in one shoot.",  accent: "#10B981" },
-      { icon: <Film size={16} strokeWidth={2.2} />,      title: "Feature Videos", tagline: "Branded clips, made automatically.", accent: "#F59E0B" },
-    ],
+    heroNode: <RawScanHero />,
     actionLabel: "Process all 89",
   },
   nophoto: {
     accent: "#7F6AF2",
-    step: "Step 02 · Smart Suite · Acquisition",
+    step: "Step 02 · Studio AI · Smart Match",
     product: "SmartMatch.",
     punchline: "Go live on Day 0.",
     tagline: "Publish before the vehicle even arrives.",
     problem:
-      "23 vehicles have no media yet. They're projected as eligible for SmartMatch — same year, trim, and spec as parent inventory we already have media for.",
+      "The vehicle is acquired but the shoot is pending or it hasn't hit your lot yet. Every day your listing sits dark, buyers are clicking the competition while holding cost eats at your margin.",
     bullets: [
-      "Eligibility computed from VIN spec, trim, color match, and year",
-      "Projected matches surfaced before commit — AE controls when to apply",
-      "Parent media adapted per-vehicle so listings don't look duplicated",
+      "VIN decoded to match year, make, model, trim, and color in your media library",
+      "Matching media assigned in minutes. The unit goes live before anyone touches a camera",
+      "Real photos replace SmartMatch images the moment you shoot them. No manual cleanup needed",
     ],
-    proof: { value: "0 → live in 4 min", caption: "Median time from IMS arrival to first published listing for SmartMatch-eligible vehicles." },
-    heroImage: imgSmartMatch,
+    heroNode: <SmartMatchScanHero />,
     comparison: {
       beforeLabel: "No photo yet",
       afterLabel: "Matched media",
@@ -83,78 +411,60 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       ),
       after: <img src={imgStudioExterior} alt="Matched studio media" className="w-full h-full object-cover" />,
     },
-    features: [
-      { icon: <Rocket size={16} strokeWidth={2.2} />,   title: "Live Instantly",  tagline: "Skip the shoot. Publish in seconds.", accent: "#4600F2" },
-      { icon: <Calendar size={16} strokeWidth={2.2} />, title: "List Pre-Arrival", tagline: "Live days before the car lands.",   accent: "#10B981" },
-      { icon: <Search size={16} strokeWidth={2.2} />,   title: "Spec Matching",   tagline: "Year, make, model, trim, colour.",   accent: "#E91E63" },
-    ],
     actionLabel: "Match all eligible",
   },
   cgi: {
     accent: "#7C3AED",
-    step: "Step 03 · Smart Suite · CGI",
-    product: "CGI Studio.",
-    punchline: "Photorealistic showroom renders.",
-    tagline: "Elevate standard processed photos to CGI-grade renders without a reshoot.",
+    step: "Step 03 · Studio AI · Stock Photos",
+    product: "Studio AI.",
+    punchline: "Consistent VDPs. No stock photo chaos.",
+    tagline: "Replace inconsistent stock images with brand-matched visuals — across every VDP, at scale.",
     problem:
-      "134 vehicles have clean processed photos, but the lighting, angles, and backgrounds aren't premium enough to stand out on third-party marketplaces or high-intent OEM placements.",
+      "Stock images on your VDPs are hurting your dealership brand. Inconsistent backgrounds, watermarks, and non-standard crops across listings reduce buyer trust and suppress VDP clicks.",
     bullets: [
-      "Vehicle re-lit, rotated, and re-staged in a virtual studio per VIN",
-      "Brand backgrounds & color accents matched to your dealership",
-      "Multi-angle CGI set — front 3/4, rear 3/4, interior dash — generated together",
+      "Studio AI scans every stock photo listing and flags inconsistencies — mismatched backgrounds, watermarks, and off-brand crops",
+      "Each image is processed to your dealership's visual standard: uniform angles, clean backgrounds, and consistent branding across every vehicle",
+      "Brand-consistent VDP images go live in minutes, replacing stock photos at scale with no reshoots and no manual editing",
     ],
-    proof: { value: "+58% engagement", caption: "Median CTR lift on listings with CGI-grade hero images vs. standard processed photos across third-party marketplaces." },
-    heroImage: imgCampaigns,
+    heroNode: <StockPhotoGridHero />,
     comparison: {
       beforeLabel: "Standard processed",
       afterLabel: "CGI-grade render",
       before: <img src={imgCgiFront} alt="Standard processed front" className="w-full h-full object-cover" />,
       after:  <img src={imgCgiTransformed} alt="CGI-grade front" className="w-full h-full object-cover" />,
     },
-    features: [
-      { icon: <Wand2 size={16} strokeWidth={2.2} />,     title: "Virtual Studio", tagline: "Showroom lighting, no studio space.", accent: "#7C3AED" },
-      { icon: <ImageIcon size={16} strokeWidth={2.2} />, title: "Brand Match",    tagline: "Backgrounds + color tuned to lot.",   accent: "#3B82F6" },
-      { icon: <RotateCw size={16} strokeWidth={2.2} />,  title: "Multi-Angle",    tagline: "Hero, rear 3/4, interior — together.", accent: "#10B981" },
-    ],
     actionLabel: "Upgrade all 134 to CGI",
   },
   unsyndicated: {
     accent: "#4600F2",
-    step: "Step 03 · Smart Suite · Distribution",
+    step: "Step 04 · Studio AI · Syndication",
     product: "Syndication.",
     punchline: "Every channel, one click.",
-    tagline: "Push every complete listing to the marketplaces that matter.",
+    tagline: "Push every studio-grade listing to the marketplaces buyers actually use.",
     problem:
-      "156 vehicles are camera-ready but only live on your dealer site. Marketplaces, social, and OEM partners haven't seen them — that's frontline time you're paying for.",
+      "Your vehicles are listing-ready but visibility stops at your website. Buyers searching AutoTrader, Cars.com, and KBB never see them. Every day a car sits off-marketplace is another day holding cost compounds with zero buyer reach.",
     bullets: [
-      "AutoTrader, Cars.com, KBB, dealer site, Facebook & Instagram in one push",
-      "Channel-specific formatting (aspect ratios, character limits) handled per-platform",
-      "Status pinged back to the IMS so the AE never re-publishes by accident",
+      "AutoTrader, Cars.com, KBB, Facebook, Instagram, and your dealer site. All pushed in a single action.",
+      "Channel-specific formatting handled automatically. Aspect ratios, character limits, and listing specs matched per platform.",
+      "Publish status synced back to your IMS the moment a listing goes live. Your team never re-publishes by mistake.",
     ],
-    proof: { value: "11 channels", caption: "Average syndication reach per vehicle after first publish. Marketplaces alone drive ~62% of inbound leads." },
-    // No Demo 1 image for syndication — use the campaign hero as the cleanest stand-in
     heroImage: imgCampaigns,
-    features: [
-      { icon: <Globe size={16} strokeWidth={2.2} />, title: "Marketplaces",      tagline: "AutoTrader, Cars.com, KBB live.", accent: "#4600F2" },
-      { icon: <Send size={16} strokeWidth={2.2} />,  title: "Channel-Aware",     tagline: "Per-platform crops & captions.",   accent: "#0EA5E9" },
-      { icon: <Layers size={16} strokeWidth={2.2} />, title: "IMS Sync",         tagline: "Status pings back automatically.", accent: "#10B981" },
-    ],
     actionLabel: "Syndicate all 156",
   },
   aging: {
     accent: "#DC2626",
-    step: "Step 04 · Smart Suite · Performance",
+    step: "Step 05 · Studio AI · Smart Campaigns",
     product: "Smart Campaigns.",
-    punchline: "Win the attention battle.",
-    tagline: "Targeted campaigns for aged inventory bleeding holding cost.",
+    punchline: "Stop the bleed. Move aged stock.",
+    tagline: "Targeted campaigns for inventory that's been sitting too long and costing too much.",
     problem:
-      "34 units are past 40 days on lot at $45/day holding cost — that's $1,530+ per car per month evaporating. Generic ads aren't moving them; targeted campaigns can.",
+      "34 units are past 40 days on lot at $45/day — that's over $1,530 per car per month evaporating. Standard price cuts alone won't move aged stock. What moves it is targeted visibility in front of the right buyers at the right moment.",
     bullets: [
-      "Auto-segmented audiences from in-market shopper data",
-      "Campaign template library — price-drop, finance-led, trade-in pitches",
-      "Holding-cost math attached to every campaign so the AE proves the ROI",
+      "Aged inventory automatically segmented by days-on-lot, price band, and in-market shopper demand signals",
+      "Purpose-built campaign templates for aged stock: price-drop urgency, finance-led offers, and trade-in capture",
+      "Every campaign shows the holding-cost math — so you know exactly what moving each car is worth before you launch",
     ],
-    proof: { value: "$52K saved", caption: "Average monthly holding-cost reduction across dealers running Smart Campaigns on >40-day inventory." },
+    proof: { value: "$52K saved", caption: "Average monthly holding-cost reduction across dealers running Smart Campaigns on aged inventory past 40 days." },
     heroImage: imgCampaigns,
     comparison: {
       beforeLabel: "Standard listing",
@@ -164,7 +474,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     },
     features: [
       { icon: <Sparkles size={16} strokeWidth={2.2} />,  title: "Targeted Audiences", tagline: "In-market shoppers, auto-segmented.", accent: "#DC2626" },
-      { icon: <Timer size={16} strokeWidth={2.2} />,     title: "Holding-Cost ROI",   tagline: "$/day math attached to every run.", accent: "#F59E0B" },
+      { icon: <Timer size={16} strokeWidth={2.2} />,     title: "Holding-Cost ROI",   tagline: "$/day math on every campaign run.", accent: "#F59E0B" },
       { icon: <Building2 size={16} strokeWidth={2.2} />, title: "Group-Wide",         tagline: "Roll the same campaign across lots.", accent: "#4600F2" },
     ],
     actionLabel: "Launch campaigns",
@@ -190,7 +500,7 @@ const DTF_BY_STEP   = [14,  12,  10,  8,    6,    5];
 const SCORE_BY_STEP = [4.2, 5.3, 6.4, 7.5,  8.4,  9.1];
 // Cumulative holding-cost savings unlocked as each bucket resolves. Numbers
 // roughly correspond to (DTF days saved × hold-cost $/day × inventory volume).
-const SAVED_BY_STEP = [0,   4_300, 8_900, 15_200, 24_600, 42_500];
+const HOLDING_COST_BY_STEP = [52_500, 48_200, 43_600, 37_300, 27_900, 10_000];
 
 const BUCKET_TOTALS: Record<BucketKey, number> = {
   raw: 89,
@@ -415,16 +725,16 @@ export function Demo2({ demoConfig }: Demo2Props) {
   const effectiveStep = isBeforeView ? 0 : completedCount;
   const dtf = DTF_BY_STEP[effectiveStep];
   const score = SCORE_BY_STEP[effectiveStep];
-  const saved = SAVED_BY_STEP[effectiveStep];
+  const holdingCost = HOLDING_COST_BY_STEP[effectiveStep];
   // Persistent uplift since the previous resolved bucket (used by the KPI bar
   // to show e.g. "+2 days saved" / "+1.1" next to the current value).
   // In Before view we suppress uplifts since there's no preceding step.
-  const prevDtf   = !isBeforeView && completedCount > 0 ? DTF_BY_STEP[completedCount - 1]   : null;
-  const prevScore = !isBeforeView && completedCount > 0 ? SCORE_BY_STEP[completedCount - 1] : null;
-  const prevSaved = !isBeforeView && completedCount > 0 ? SAVED_BY_STEP[completedCount - 1] : null;
-  const dtfUplift   = prevDtf   != null ? prevDtf - dtf : 0;
-  const scoreUplift = prevScore != null ? score - prevScore : 0;
-  const savedUplift = prevSaved != null ? saved - prevSaved : 0;
+  const prevDtf        = !isBeforeView && completedCount > 0 ? DTF_BY_STEP[completedCount - 1]          : null;
+  const prevScore      = !isBeforeView && completedCount > 0 ? SCORE_BY_STEP[completedCount - 1]        : null;
+  const prevHoldingCost = !isBeforeView && completedCount > 0 ? HOLDING_COST_BY_STEP[completedCount - 1] : null;
+  const dtfUplift          = prevDtf          != null ? prevDtf - dtf : 0;
+  const scoreUplift        = prevScore        != null ? score - prevScore : 0;
+  const holdingCostDrop    = prevHoldingCost  != null ? prevHoldingCost - holdingCost : 0;
 
   const buckets: Record<BucketKey, BucketState> = useMemo(() => ({
     raw:          { count: BUCKET_TOTALS.raw,          completed: isBeforeView ? false : completed.raw },
@@ -585,10 +895,10 @@ export function Demo2({ demoConfig }: Demo2Props) {
       <Demo2Dashboard
         dtf={dtf}
         score={score}
-        saved={saved}
+        holdingCost={holdingCost}
         dtfUplift={dtfUplift}
         scoreUplift={scoreUplift}
-        savedUplift={savedUplift}
+        holdingCostDrop={holdingCostDrop}
         buckets={buckets}
         activeBucket={activeBucket}
         onBucketClick={handleBucketClick}
@@ -647,10 +957,25 @@ export function Demo2({ demoConfig }: Demo2Props) {
         // When the active bucket has been resolved, compute the lift it gave —
         // the deltas between its step and the step before it.
         const bucketStep = activeBucket ? BUCKET_ORDER.indexOf(activeBucket) + 1 : 0;
+        const dtfSaved    = DTF_BY_STEP[bucketStep - 1] - DTF_BY_STEP[bucketStep];
+        const savedDollars = HOLDING_COST_BY_STEP[bucketStep - 1] - HOLDING_COST_BY_STEP[bucketStep];
         const successForActive = (activeBucket && completed[activeBucket] && bucketStep > 0) ? {
-          dtfSaved:    DTF_BY_STEP[bucketStep - 1] - DTF_BY_STEP[bucketStep],
+          dtfSaved,
           scoreGained: SCORE_BY_STEP[bucketStep] - SCORE_BY_STEP[bucketStep - 1],
-          savedDollars: SAVED_BY_STEP[bucketStep] - SAVED_BY_STEP[bucketStep - 1],
+          savedDollars,
+          // Studio AI (raw): custom headline + 4 chips that speak to the product value prop.
+          // Step 1 does not affect days-to-frontline, so that chip is excluded.
+          ...(activeBucket === "raw" ? {
+            title:    `${BUCKET_TOTALS.raw} raw listings, now studio grade.`,
+            subtitle: "Studio AI turned parking-lot shots into professional, buyer-ready media across your full inventory.",
+            chips: [
+              { delta: `${BUCKET_TOTALS.raw}`,                             label: "Listings upgraded"    },
+              { delta: "+34%",                                              label: "VDP views uplift"     },
+              { delta: `+${(SCORE_BY_STEP[bucketStep] - SCORE_BY_STEP[bucketStep - 1]).toFixed(1)}`,
+                                                                            label: "Inventory score"      },
+              { delta: `+$${savedDollars.toLocaleString()}`,               label: "Holding cost saved"   },
+            ],
+          } : {}),
         } : undefined;
 
         // Resolve which CTA the pitch should currently show
