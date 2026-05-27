@@ -23,8 +23,19 @@ export interface PitchContent {
   punchline?: string;
   /** The problem this pitch addresses (tied to the current bucket) */
   problem: string;
-  /** "How it works" bullets (max 3) */
+  /**
+   * When provided, renders the problem section as a chip/tag cloud instead of
+   * a paragraph. Each string becomes one pill tag.
+   */
+  problemChips?: string[];
+  /** "How it works" bullets (max 6) */
   bullets: string[];
+  /**
+   * Controls the visual layout of the "How it works" section.
+   * - "checklist" (default) — checkmark bullets, paragraph text
+   * - "steps" — numbered vertical step list for short 3-4 word step names
+   */
+  bulletStyle?: "checklist" | "steps";
   /** ROI number + caption — proof.value animates in. Omit to hide the section. */
   proof?: { value: string; caption: string };
   /** Hero image (Demo 1 transformation artwork). */
@@ -112,7 +123,7 @@ const MAGENTA_GRAD = "linear-gradient(90deg, #FF5C9A 0%, #B651D7 100%)";
 export function PitchPanel(props: PitchPanelProps) {
   const {
     open, onClose, onAction, actionRunning, completed,
-    accent, product, step, tagline, punchline, problem, bullets,
+    accent, product, step, tagline, punchline, problem, problemChips, bullets, bulletStyle = "checklist",
     proof, heroImage, heroNode, comparison, features, featuresPhase = "pitch", actionLabel,
     channels, selectedChannels, onChannelToggle,
     success,
@@ -333,36 +344,77 @@ export function PitchPanel(props: PitchPanelProps) {
           {/* Problem */}
           {!success && (
             <div data-section className="mb-[18px]">
-              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[6px] font-['Inter:Bold',sans-serif]">
+              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[8px] font-['Inter:Bold',sans-serif]">
                 The problem
               </p>
-              <p className="text-[13px] text-[#1F2937] leading-[1.55] font-['Inter:Regular',sans-serif]">
-                {problem}
-              </p>
+              {problemChips && problemChips.length > 0 ? (
+                <div className="flex flex-wrap gap-[6px]">
+                  {problemChips.map((chip, i) => (
+                    <span
+                      key={i}
+                      className="inline-flex items-center px-[10px] py-[5px] rounded-full text-[11.5px] font-medium font-['Inter:Medium',sans-serif] leading-none text-white"
+                      style={{ background: "#4600F2" }}
+                    >
+                      {chip}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[13px] text-[#1F2937] leading-[1.55] font-['Inter:Regular',sans-serif]">
+                  {problem}
+                </p>
+              )}
             </div>
           )}
 
           {/* How it works */}
           {!success && (
             <div data-section className="mb-[20px]">
-              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[8px] font-['Inter:Bold',sans-serif]">
+              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[10px] font-['Inter:Bold',sans-serif]">
                 How it works
               </p>
-              <ul className="space-y-[8px]">
-                {bullets.slice(0, 3).map((b, i) => (
-                  <li key={i} className="flex items-start gap-[10px]">
-                    <span
-                      className="size-[18px] rounded-full flex items-center justify-center shrink-0 mt-[1px]"
-                      style={{ background: `${accent}1A`, color: accent }}
-                    >
-                      <Check size={11} strokeWidth={3} />
-                    </span>
-                    <span className="text-[13px] text-[#1F2937] leading-[1.5] font-['Inter:Medium',sans-serif] font-medium">
-                      {b}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              {bulletStyle === "steps" ? (
+                <ol className="relative">
+                  {bullets.map((b, i) => (
+                    <li key={i} className="flex items-start gap-[12px] pb-[14px] last:pb-0 relative">
+                      {/* Vertical connector line */}
+                      {i < bullets.length - 1 && (
+                        <span
+                          className="absolute left-[12px] top-[26px] bottom-0 w-[2px]"
+                          style={{ background: accent }}
+                          aria-hidden
+                        />
+                      )}
+                      {/* Step number circle — solid fill, no border */}
+                      <span
+                        className="size-[26px] rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold font-['Inter:Bold',sans-serif] text-white z-[1]"
+                        style={{ background: accent }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="text-[13px] text-[#1F2937] leading-[1.5] font-['Inter:Semi_Bold',sans-serif] font-semibold pt-[4px]">
+                        {b}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <ul className="space-y-[8px]">
+                  {bullets.slice(0, 3).map((b, i) => (
+                    <li key={i} className="flex items-start gap-[10px]">
+                      <span
+                        className="size-[18px] rounded-full flex items-center justify-center shrink-0 mt-[1px]"
+                        style={{ background: `${accent}1A`, color: accent }}
+                      >
+                        <Check size={11} strokeWidth={3} />
+                      </span>
+                      <span className="text-[13px] text-[#1F2937] leading-[1.5] font-['Inter:Medium',sans-serif] font-medium">
+                        {b}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
