@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from "react";
+import { forwardRef, useEffect, useMemo, useRef } from "react";
 import gsap from "gsap";
 import { Clock, DollarSign, Activity, Camera, Zap } from "lucide-react";
 import { calcOpportunity, type DemoConfig } from "../../types/demoConfig";
@@ -36,6 +36,104 @@ function scaledDTF(cfg: DemoConfig): number[] {
 
 function fmtK(v: number): string {
   return v >= 1_000 ? `$${(v / 1_000).toFixed(1)}K` : `$${v.toLocaleString()}`;
+}
+
+// ── Small score odometer (for metric boxes) ───────────────────────────────────
+function ScoreOdometerInline({
+  before,
+  after,
+  animateKey,
+  delay = 1.03, // ~0.15 mount delay + ~0.88 within sequence
+}: {
+  before: number;
+  after: number;
+  animateKey: string;
+  delay?: number;
+}) {
+  const tensRef = useRef<HTMLDivElement>(null);
+  const onesRef = useRef<HTMLDivElement>(null);
+  const decRef = useRef<HTMLDivElement>(null);
+
+  const H = 22; // must match line-height below
+  const REP = 4; // 0-9 repeated 4x => 40 rows, enough for 2 cycles + diff
+
+  const fmt = (n: number) => n.toFixed(1).padStart(3, "0"); // "05.3"
+  const b = fmt(before);
+  const a = fmt(after);
+
+  const bT = parseInt(b[0], 10);
+  const bO = parseInt(b[1], 10);
+  const bD = parseInt(b[3], 10);
+
+  const aT = parseInt(a[0], 10);
+  const aO = parseInt(a[1], 10);
+  const aD = parseInt(a[3], 10);
+
+  useEffect(() => {
+    const roll = (ref: React.RefObject<HTMLDivElement>, from: number, to: number, extraDelay: number) => {
+      if (!ref.current) return null;
+      const cycles = 2;
+      const diff = (to - from + 10) % 10;
+      const steps = cycles * 10 + diff;
+      // start position
+      gsap.set(ref.current, { y: -from * H });
+      // animate down through repeated digit stack
+      return gsap.to(ref.current, {
+        y: -(from + steps) * H,
+        duration: 0.9,
+        delay: delay + extraDelay,
+        ease: "power3.out",
+      });
+    };
+
+    const t1 = roll(tensRef, bT, aT, 0);
+    const t2 = roll(onesRef, bO, aO, 0.03);
+    const t3 = roll(decRef,  bD, aD, 0.06);
+    return () => {
+      t1?.kill();
+      t2?.kill();
+      t3?.kill();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animateKey, bT, bO, bD, aT, aO, aD]);
+
+  const DigitStack = ({ innerRef }: { innerRef: React.RefObject<HTMLDivElement> }) => (
+    <div className="h-[22px] overflow-hidden">
+      <div ref={innerRef}>
+        {Array.from({ length: 10 * REP }).map((_, idx) => {
+          const v = idx % 10;
+          return (
+            <div
+              key={idx}
+              className="h-[22px] leading-[22px] text-[22px] font-bold tabular-nums font-['Inter:Bold',sans-serif]"
+            >
+              {v}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="relative inline-flex items-end text-[#0a0a0a]">
+      {/* subtle odometer window highlights */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-[2px] -top-[2px] h-[8px] rounded-[8px]"
+        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.00) 100%)" }}
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-[2px] -bottom-[2px] h-[8px] rounded-[8px]"
+        style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.00) 100%)" }}
+      />
+      <DigitStack innerRef={tensRef} />
+      <DigitStack innerRef={onesRef} />
+      <span className="h-[22px] leading-[22px] text-[22px] font-bold font-['Inter:Bold',sans-serif]">.</span>
+      <DigitStack innerRef={decRef} />
+    </div>
+  );
 }
 
 // ── GraphSection ──────────────────────────────────────────────────────────────
@@ -200,13 +298,36 @@ export function StepMetricsPanel({
   successMode: _successMode = false,
 }: StepMetricsPanelProps) {
   const bucketIdx = BUCKET_ORDER.indexOf(bucketKey);
-  if (bucketIdx > 2) return null;
+  // Step 5 metrics (aging) are supported. Step 4 still handled separately.
+  if (bucketKey === "unsyndicated") return null;
+
+  const opp = calcOpportunity(demoConfig);
+  const hc = scaledHC(demoConfig);
+  const dtf = scaledDTF(demoConfig);
 
   const afterIdx = bucketIdx + 1;
 
-  const opp    = calcOpportunity(demoConfig);
-  const hc     = scaledHC(demoConfig);
-  const dtf    = scaledDTF(demoConfig);
+  // ── Step 5 (aging) view values (also used for animation) ────────────────────
+  const isAging = bucketKey === "aging";
+  const agingTargetUnits = useMemo(() => Math.round(demoConfig.totalInventory * 0.10), [demoConfig.totalInventory]);
+  const agingUnitsBefore = opp.agedVehicles;
+  const agingUnitsAfter  = agingTargetUnits;
+  const agingUnitsDelta  = agingUnitsBefore - agingUnitsAfter;
+
+  const agingCostBefore = opp.agedMonthly;
+  // Reduce cost proportionally with aged cohort shrinking from 15% → 10%
+  const agingCostAfter = Math.round(agingCostBefore * (10 / 15));
+  const agingCostDelta = agingCostBefore - agingCostAfter;
+
+  const agingStartPct = agingUnitsBefore > 0 ? 100 : 0;
+  const agingEndPct   = agingUnitsBefore > 0 ? Math.max(4, (agingUnitsAfter / agingUnitsBefore) * 100) : 4;
+  const agingCostStartPct = agingCostBefore > 0 ? 100 : 0;
+  const agingCostEndPct   = agingCostBefore > 0 ? Math.max(4, (agingCostAfter / agingCostBefore) * 100) : 4;
+
+  // Score values for step 5
+  const scoreBeforeAging = SCORE_STEPS[4];
+  const scoreAfterAging  = SCORE_STEPS[5];
+  const scoreDeltaAging  = +(scoreAfterAging - scoreBeforeAging).toFixed(1);
 
   // ── TTM values ───────────────────────────────────────────────────────────────
   // Before: dealer's original baseline — fixed across all steps
@@ -246,7 +367,6 @@ export function StepMetricsPanel({
   const box1Ref         = useRef<HTMLDivElement>(null);
   const box2Ref         = useRef<HTMLDivElement>(null);
   const box3Ref         = useRef<HTMLDivElement>(null);
-  const scoreNumberRef  = useRef<HTMLSpanElement>(null);
 
   // ── Entrance animation ───────────────────────────────────────────────────────
   // Runs on mount (StepMetricsPanel mounts fresh when success state activates).
@@ -261,18 +381,22 @@ export function StepMetricsPanel({
 
     // Set After bars at previous-step start position before animating
     if (ttmAfterBarRef.current) {
-      gsap.set(ttmAfterBarRef.current, { width: `${ttmStartPct}%` });
+      const start = isAging ? agingStartPct : ttmStartPct;
+      const end   = isAging ? agingEndPct   : Math.max(0, ttmEndPct);
+      gsap.set(ttmAfterBarRef.current, { width: `${start}%` });
       tl.to(ttmAfterBarRef.current, {
-        width: `${Math.max(0, ttmEndPct)}%`,
+        width: `${end}%`,
         duration: 0.8,
         ease: "power3.out",
       }, 0);
     }
 
     if (hcAfterBarRef.current) {
-      gsap.set(hcAfterBarRef.current, { width: `${hcStartPct}%` });
+      const start = isAging ? agingCostStartPct : hcStartPct;
+      const end   = isAging ? agingCostEndPct   : hcEndPct;
+      gsap.set(hcAfterBarRef.current, { width: `${start}%` });
       tl.to(hcAfterBarRef.current, {
-        width: `${hcEndPct}%`,
+        width: `${end}%`,
         duration: 0.8,
         ease: "power3.out",
       }, 0.1);
@@ -294,21 +418,6 @@ export function StepMetricsPanel({
       0.78
     );
 
-    // Score odometer count-up
-    if (scoreNumberRef.current) {
-      const obj = { val: scoreBefore };
-      tl.to(obj, {
-        val: scoreAfter,
-        duration: 0.9,
-        ease: "power2.out",
-        onUpdate() {
-          if (scoreNumberRef.current) {
-            scoreNumberRef.current.textContent = obj.val.toFixed(1);
-          }
-        },
-      }, 0.88);
-    }
-
     return () => { tl.kill(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucketKey]);
@@ -316,39 +425,103 @@ export function StepMetricsPanel({
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-[12px]">
-      {/* ── Graph 1: Time to market ─────────────────────────────────────────── */}
-      <GraphSection
-        title="Time to market"
-        beforeDisplay={`${ttmBaseline}d`}
-        afterDisplay={isZeroTTM ? "0d" : `${ttmAfter}d`}
-        deltaDisplay={`-${ttmDelta}d`}
-        deltaColor={accent}
-        deltaBg={`${accent}20`}
-        startPct={ttmStartPct}
-        endPct={ttmEndPct}
-        afterBarRef={ttmAfterBarRef}
-        deltaRef={ttmDeltaRef}
-        afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
-        isZeroAfter={isZeroTTM}
-      />
+      {isAging ? (
+        <div>
+          <GraphSection
+            title="Aged units (45+ days)"
+            beforeDisplay={`${agingUnitsBefore}`}
+            afterDisplay={`${agingUnitsAfter}`}
+            deltaDisplay={`-${agingUnitsDelta} units`}
+            deltaColor="#EF4444"
+            deltaBg="#FEE2E2"
+            startPct={agingStartPct}
+            endPct={agingEndPct}
+            afterBarRef={ttmAfterBarRef}
+            deltaRef={ttmDeltaRef}
+            afterBarGradient="linear-gradient(90deg, #EF4444 0%, #F97316 100%)"
+          />
+          <GraphSection
+            title="Aged holding cost · monthly"
+            beforeDisplay={fmtK(agingCostBefore)}
+            afterDisplay={fmtK(agingCostAfter)}
+            deltaDisplay={`+${fmtK(agingCostDelta)} recovered`}
+            deltaColor="#10B981"
+            deltaBg="#D1FAE5"
+            startPct={agingCostStartPct}
+            endPct={agingCostEndPct}
+            afterBarRef={hcAfterBarRef}
+            deltaRef={hcDeltaRef}
+            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
+          />
 
-      {/* ── Graph 2: Holding cost ───────────────────────────────────────────── */}
-      <GraphSection
-        title="Holding cost at risk · monthly"
-        beforeDisplay={fmtK(hcBaseline)}
-        afterDisplay={fmtK(hcAfter)}
-        deltaDisplay={`+${fmtK(hcDelta)} recovered`}
-        deltaColor="#059669"
-        deltaBg="#D1FAE5"
-        startPct={hcStartPct}
-        endPct={hcEndPct}
-        afterBarRef={hcAfterBarRef}
-        deltaRef={hcDeltaRef}
-        afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
-      />
+          <div className="flex gap-[8px] pt-[2px]">
+            <MetricBox
+              ref={box1Ref}
+              icon={<Zap size={13} strokeWidth={2.5} />}
+              label="Aged vehicles targeted"
+              delta={`${agingUnitsBefore}`}
+              sub={`Target: ${agingUnitsAfter} (10% of lot)`}
+              accent="#EF4444"
+            />
+            <MetricBox
+              ref={box2Ref}
+              icon={<DollarSign size={13} strokeWidth={2.5} />}
+              label="Aged HC recovered"
+              delta={`+${fmtK(agingCostDelta)}`}
+              sub="estimated with campaigns"
+              accent="#10B981"
+            />
+            <MetricBox
+              ref={box3Ref}
+              icon={<Activity size={13} strokeWidth={2.5} />}
+              label="Listing quality"
+              delta={
+                <ScoreOdometerInline
+                  before={scoreBeforeAging}
+                  after={scoreAfterAging}
+                  animateKey={`aging-${bucketKey}`}
+                />
+              }
+              sub={`+${scoreDeltaAging} pts  ·  0 – 10`}
+              accent="#7C3AED"
+            />
+          </div>
+        </div>
+      ) : (
+        <div>
+          {/* ── Graph 1: Time to market ─────────────────────────────────────────── */}
+          <GraphSection
+            title="Time to market"
+            beforeDisplay={`${ttmBaseline}d`}
+            afterDisplay={isZeroTTM ? "0d" : `${ttmAfter}d`}
+            deltaDisplay={`-${ttmDelta}d`}
+            deltaColor={accent}
+            deltaBg={`${accent}20`}
+            startPct={ttmStartPct}
+            endPct={ttmEndPct}
+            afterBarRef={ttmAfterBarRef}
+            deltaRef={ttmDeltaRef}
+            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
+            isZeroAfter={isZeroTTM}
+          />
 
-      {/* ── Three metric boxes ──────────────────────────────────────────────── */}
-      <div className="flex gap-[8px] pt-[2px]">
+          {/* ── Graph 2: Holding cost ───────────────────────────────────────────── */}
+          <GraphSection
+            title="Holding cost at risk · monthly"
+            beforeDisplay={fmtK(hcBaseline)}
+            afterDisplay={fmtK(hcAfter)}
+            deltaDisplay={`+${fmtK(hcDelta)} recovered`}
+            deltaColor="#059669"
+            deltaBg="#D1FAE5"
+            startPct={hcStartPct}
+            endPct={hcEndPct}
+            afterBarRef={hcAfterBarRef}
+            deltaRef={hcDeltaRef}
+            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
+          />
+
+          {/* ── Three metric boxes ──────────────────────────────────────────────── */}
+          <div className="flex gap-[8px] pt-[2px]">
         {/* Box 1 — step-specific primary outcome */}
         {bucketKey === "nophoto" ? (
           <MetricBox
@@ -397,12 +570,18 @@ export function StepMetricsPanel({
           icon={<Activity size={13} strokeWidth={2.5} />}
           label="Listing quality"
           delta={
-            <span ref={scoreNumberRef}>{scoreBefore.toFixed(1)}</span>
+            <ScoreOdometerInline
+              before={scoreBefore}
+              after={scoreAfter}
+              animateKey={`score-${bucketKey}`}
+            />
           }
           sub={`+${scoreDelta} pts  ·  0 – 10`}
           accent="#7C3AED"
         />
-      </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

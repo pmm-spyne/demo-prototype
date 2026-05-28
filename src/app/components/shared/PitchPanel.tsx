@@ -164,7 +164,6 @@ export function PitchPanel(props: PitchPanelProps) {
   const sectionsRef = useRef<HTMLDivElement>(null);
   const heroImgRef = useRef<HTMLImageElement>(null);
   const proofValueRef = useRef<HTMLSpanElement>(null);
-  const scoreOdoRef = useRef<HTMLSpanElement>(null);
 
   // Animate the proof value as a counter when it contains a leading number.
   // (e.g. "+34% VDP views" → tweens 0 → 34 then renders the rest verbatim.)
@@ -232,24 +231,6 @@ export function PitchPanel(props: PitchPanelProps) {
 
     return () => { tl.kill(); };
   }, [open, product, parsedProof, success, featuresPhase]);
-
-  // Score odometer in success banner (Option A layout)
-  useEffect(() => {
-    if (!success || !scoreOdoRef.current) return;
-    const before = success.scoreBefore ?? 0;
-    const after = success.scoreAfter ?? (before + (success.scoreGained ?? 0));
-    const obj = { v: before };
-    const t = gsap.to(obj, {
-      v: after,
-      duration: 0.9,
-      delay: 0.25,
-      ease: "power2.out",
-      onUpdate: () => {
-        if (scoreOdoRef.current) scoreOdoRef.current.textContent = obj.v.toFixed(1);
-      },
-    });
-    return () => { t.kill(); };
-  }, [success]);
 
   if (!open) return null;
 
@@ -326,7 +307,7 @@ export function PitchPanel(props: PitchPanelProps) {
                     <div className="min-w-0">
                       <p className="inline-flex items-center gap-[5px] px-[7px] py-[1.5px] rounded-full bg-white/20 text-[9px] font-bold uppercase tracking-[1.2px] text-white mb-[6px] font-['Inter:Bold',sans-serif]">
                         <Sparkles size={9} strokeWidth={2.6} />
-                        Win achieved
+                        Impact unlocked
                       </p>
                       <h3 className="text-[16px] font-bold text-white font-['Inter:Bold',sans-serif] leading-[20px]">
                         {success.title ?? "Transformation complete."}
@@ -339,17 +320,16 @@ export function PitchPanel(props: PitchPanelProps) {
                     <p className="text-[9px] font-bold uppercase tracking-[1.1px] text-white/75 font-['Inter:Bold',sans-serif]">
                       Inventory score
                     </p>
-                    <div className="mt-[4px] flex items-baseline justify-end gap-[6px] text-white">
-                      <span ref={scoreOdoRef} className="text-[28px] font-bold leading-none tabular-nums font-['Inter:Bold',sans-serif]">
-                        {(success.scoreAfter ?? (success.scoreBefore ?? 0) + (success.scoreGained ?? 0)).toFixed(1)}
-                      </span>
-                      <span className="text-[12px] font-semibold text-white/80 font-['Inter:Semi_Bold',sans-serif]">
+                    <div className="mt-[4px] flex items-end justify-end gap-[6px] text-white">
+                      <ScoreOdometer
+                        before={success.scoreBefore}
+                        after={success.scoreAfter}
+                        delta={success.scoreGained}
+                      />
+                      <span className="text-[12px] font-semibold text-white/80 font-['Inter:Semi_Bold',sans-serif] pb-[2px]">
                         /10
                       </span>
                     </div>
-                    <p className="mt-[2px] text-[11px] font-semibold text-white/85 font-['Inter:Semi_Bold',sans-serif] tabular-nums">
-                      +{(success.scoreGained ?? 0).toFixed(1)}
-                    </p>
                   </div>
                 </div>
               </div>
@@ -660,6 +640,112 @@ export function PitchPanel(props: PitchPanelProps) {
         </div>
       </div>,
     document.body
+  );
+}
+
+// ── Success banner inventory-score odometer (rolling digits) ──────────────────
+function ScoreOdometer({ before, after, delta }: { before?: number; after?: number; delta?: number }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const tensRef = useRef<HTMLDivElement>(null);
+  const onesRef = useRef<HTMLDivElement>(null);
+  const decRef  = useRef<HTMLDivElement>(null);
+
+  const safeBefore = Number.isFinite(before) ? (before as number) : 0;
+  const safeAfter  = Number.isFinite(after)  ? (after as number)  : safeBefore;
+
+  const fmt = (n: number) => n.toFixed(1).padStart(3, "0"); // e.g. 5.3 -> "05.3"
+  const b = fmt(safeBefore);
+  const a = fmt(safeAfter);
+
+  const bT = parseInt(b[0], 10);
+  const bO = parseInt(b[1], 10);
+  const bD = parseInt(b[3], 10);
+
+  const aT = parseInt(a[0], 10);
+  const aO = parseInt(a[1], 10);
+  const aD = parseInt(a[3], 10);
+
+  useEffect(() => {
+    if (!wrapRef.current) return;
+    const H = 28; // must match digit line-height below
+
+    // Build a few cycles so the roll feels like an odometer, not a jump.
+    const roll = (ref: React.RefObject<HTMLDivElement>, from: number, to: number, delay: number) => {
+      if (!ref.current) return null;
+      const cycles = 2;
+      const steps = cycles * 10 + ((to - from + 10) % 10);
+      gsap.set(ref.current, { y: -from * H });
+      return gsap.to(ref.current, {
+        y: -(from + steps) * H,
+        duration: 0.9,
+        delay,
+        ease: "power3.out",
+        modifiers: {
+          y: (y) => {
+            const val = parseFloat(y);
+            // Wrap to a 0-9 stack (10 digits)
+            const wrapped = ((val % (10 * H)) + (10 * H)) % (10 * H);
+            return `${-wrapped}px`;
+          },
+        },
+      });
+    };
+
+    const t1 = roll(tensRef, bT, aT, 0.25);
+    const t2 = roll(onesRef, bO, aO, 0.28);
+    const t3 = roll(decRef,  bD, aD, 0.31);
+
+    return () => {
+      t1?.kill();
+      t2?.kill();
+      t3?.kill();
+    };
+  }, [bT, bO, bD, aT, aO, aD]);
+
+  const DigitStack = ({ innerRef }: { innerRef: React.RefObject<HTMLDivElement> }) => (
+    <div className="h-[28px] overflow-hidden">
+      <div ref={innerRef}>
+        {Array.from({ length: 10 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-[28px] leading-[28px] text-[28px] font-bold tabular-nums font-['Inter:Bold',sans-serif]"
+          >
+            {i}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="flex items-end justify-end gap-[10px] text-white">
+      <div ref={wrapRef} className="relative flex items-end">
+        {/* subtle odometer window highlights (no background block) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-x-[2px] -top-[2px] h-[10px]"
+          style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.22) 0%, rgba(255,255,255,0.00) 100%)" }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute -inset-x-[2px] -bottom-[2px] h-[10px]"
+          style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.00) 100%)" }}
+        />
+        <DigitStack innerRef={tensRef} />
+        <DigitStack innerRef={onesRef} />
+        <div className="h-[28px] leading-[28px] text-[28px] font-bold font-['Inter:Bold',sans-serif]">
+          .
+        </div>
+        <DigitStack innerRef={decRef} />
+      </div>
+
+      {/* delta back in, but small and secondary */}
+      {typeof delta === "number" && (
+        <span className="pb-[3px] text-[12px] font-semibold text-white/85 font-['Inter:Semi_Bold',sans-serif] tabular-nums">
+          +{delta.toFixed(1)}
+        </span>
+      )}
+    </div>
   );
 }
 

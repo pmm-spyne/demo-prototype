@@ -1086,15 +1086,15 @@ function ageToDate(daysAgo: number): string {
   return `${String(d.getDate()).padStart(2, "0")} ${months[d.getMonth()]} '${String(d.getFullYear()).slice(2)}, 09:15 AM`;
 }
 
-// Canonical bucket order — also drives the "Move on to next" CTA suggestion.
+// Canonical bucket order — also drives the "Next up" CTA suggestion.
 const BUCKET_ORDER: BucketKey[] = ["raw", "nophoto", "cgi", "unsyndicated", "aging"];
 
 const NEXT_BUCKET_LABELS: Record<BucketKey, string> = {
-  raw:          "transform raw photos to studio output",
-  nophoto:      "fix no photos with Smart Match",
-  cgi:          "upgrade standard photos to CGI-grade renders",
-  unsyndicated: "syndicate listings to all channels",
-  aging:        "run Smart Campaigns on aged inventory",
+  raw:          "Studio AI",
+  nophoto:      "Smart Match",
+  cgi:          "CGI Upgrade",
+  unsyndicated: "Syndication",
+  aging:        "Smart Campaigns",
 };
 
 // Priority: raw > nophoto > unsyndicated > aging > done
@@ -1422,7 +1422,7 @@ export function Demo2({ demoConfig }: Demo2Props) {
         let onAction: () => void;
         if (isActiveCompleted) {
           if (nextBucket) {
-            label = `Move on to ${NEXT_BUCKET_LABELS[nextBucket]}`;
+            label = `Next up: ${NEXT_BUCKET_LABELS[nextBucket]}`;
             onAction = () => { setActiveBucket(nextBucket); setPitchOpen(true); };
           } else {
             label = "Inventory is sale-ready — close";
