@@ -644,9 +644,9 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   raw: {
     accent: "#E91E63",
     step: "Step 01 · Studio AI · Smart Shoot",
-    product: "Studio AI.",
-    punchline: "Studio-grade listings. No studio required.",
-    tagline: "Any phone. Any lot. Consistent, professional media every time.",
+    product: "Smart Shoot",
+    punchline: "Cut re shoots and editing time",
+    tagline: "Turn lot photos into marketplace ready media",
     problem:
       "Raw lot photos have mixed backgrounds, patchy lighting, and no 360 or video. Buyers scroll past listings that look like they were shot in a hurry.",
     problemChips: [
@@ -693,9 +693,9 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   nophoto: {
     accent: "#7F6AF2",
     step: "Step 02 · Studio AI · Smart Match",
-    product: "SmartMatch.",
-    punchline: "Go live on Day 0.",
-    tagline: "Publish before the vehicle even arrives.",
+    product: "SmartMatch",
+    punchline: "Capture demand from Day 0",
+    tagline: "Be visible while competitors wait for the shoot",
     problem:
       "The vehicle is acquired but the shoot is pending or it has not hit your lot yet. Every day your listing sits dark, buyers are clicking the competition while holding cost eats at your margin.",
     problemChips: [
@@ -746,9 +746,9 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   cgi: {
     accent: "#7C3AED",
     step: "Step 03 · Studio AI · Stock Photos",
-    product: "Studio AI.",
-    punchline: "Skip Stock Photos. Build Your Brand.",
-    tagline: "Replace inconsistent OEM images with studio-grade visuals across every VDP, at scale.",
+    product: "Smart Shoot",
+    punchline: "Make your VDPs look premium",
+    tagline: "Studio grade imagery at inventory scale",
     problem:
       "Stock images on your VDPs are hurting your dealership brand. Inconsistent backgrounds, watermarks, and non-standard crops across listings reduce buyer trust and suppress VDP clicks.",
     problemChips: [
@@ -799,7 +799,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   unsyndicated: {
     accent: "#4600F2",
     step: "Step 04 · Studio AI · Syndication",
-    product: "Syndication.",
+    product: "Syndication",
     punchline: "Every channel, one click.",
     tagline: "Push every studio-grade listing to the marketplaces buyers actually use, instantly.",
     problem:
@@ -846,7 +846,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   aging: {
     accent: "#DC2626",
     step: "Step 05 · Studio AI · Smart Campaigns",
-    product: "Smart Campaigns.",
+    product: "Smart Campaigns",
     punchline: "Right offer. Right car. Right time.",
     tagline: "Run visual promotions across your entire inventory automatically. No briefing cycle, no manual updates.",
     problem:

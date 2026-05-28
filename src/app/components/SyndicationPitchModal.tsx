@@ -381,7 +381,7 @@ export function SyndicationPitchModal({
             <div>
               <Eyebrow>Step 03 · Smart Suite · Distribution</Eyebrow>
               <h1 className="text-[32px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-[36px] tracking-tight">
-                Syndication.
+                Syndication
               </h1>
               <h1
                 className="text-[32px] font-bold font-['Inter:Bold',sans-serif] leading-[36px] tracking-tight"

@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useMemo, useRef } from "react";
 import gsap from "gsap";
-import { Clock, DollarSign, Activity, Camera, Zap } from "lucide-react";
+import { DollarSign, Activity, Zap } from "lucide-react";
 import { calcOpportunity, type DemoConfig } from "../../types/demoConfig";
 
 // Light green palette used for metric boxes
@@ -10,6 +10,10 @@ const METRIC_BOX_BG = "#ECFDF5";
 const SCORE_STEPS = [4.2, 5.3, 6.4, 7.5, 8.4, 9.1];
 const HC_STEPS    = [52_500, 48_200, 43_600, 37_300, 27_900, 10_000];
 const DTF_STEPS   = [14, 12, 10, 8, 6, 5];
+
+// VINs processed by each non-aging step (proportional to 200-unit seed inventory)
+// raw=89, nophoto=23, cgi=134 (from BUCKET_TOTALS in Demo2.tsx)
+const PHOTO_VINS_PER_STEP = [89, 23, 134];
 
 // Step-specific TTM "after" targets (see docs/METRICS_AND_DEALER_INPUTS.md §4.3)
 // nophoto: 0d — SmartMatch is instant, no photographer visit needed
@@ -55,6 +59,7 @@ interface GraphSectionProps {
   deltaRef: React.RefObject<HTMLDivElement | null>;
   afterBarGradient: string;
   isZeroAfter?: boolean;
+  zeroLabel?: string;
 }
 
 function GraphSection({
@@ -70,6 +75,7 @@ function GraphSection({
   deltaRef,
   afterBarGradient,
   isZeroAfter,
+  zeroLabel = "Instant",
 }: GraphSectionProps) {
   return (
     <div className="mb-[20px]">
@@ -119,7 +125,7 @@ function GraphSection({
           {isZeroAfter && (
             <div className="absolute inset-0 flex items-center justify-center z-[1]">
               <span className="text-[11px] font-bold text-[#059669] font-['Inter',sans-serif]">
-                Instant
+                {zeroLabel}
               </span>
             </div>
           )}
@@ -241,22 +247,39 @@ export function StepMetricsPanel({
   const hcStartPct = hcBaseline > 0 ? (hcPrevAfter / hcBaseline) * 100 : 100;
   const hcEndPct   = hcBaseline > 0 ? Math.max(4, (hcAfter / hcBaseline) * 100) : 4;
 
-  // ── Score values ─────────────────────────────────────────────────────────────
-  const scoreBefore = SCORE_STEPS[bucketIdx];
-  const scoreAfter  = SCORE_STEPS[afterIdx];
-  const scoreDelta  = +(scoreAfter - scoreBefore).toFixed(1);
+  // ── Photography cost (Graph 3, steps 1-3) ────────────────────────────────────
+  // Before: static = totalInventory × perVinCost (baseline dealer spend)
+  // After:  remaining VINs × perVinCost — reduces as each step processes VINs
+  const photoBefore = demoConfig.totalInventory * demoConfig.perVinCost;
+  const photoScaleFactor = demoConfig.totalInventory / 200;
 
-  // ── Step 2 specific ──────────────────────────────────────────────────────────
-  const photoSpendAvoided = opp.vehiclesNoPhotos * demoConfig.perVinCost;
+  function photoCumulativeProcessed(upToStepIdx: number): number {
+    let total = 0;
+    for (let i = 0; i < upToStepIdx && i < PHOTO_VINS_PER_STEP.length; i++) {
+      total += Math.round(PHOTO_VINS_PER_STEP[i] * photoScaleFactor);
+    }
+    return total;
+  }
+
+  const photoRemainingStart = Math.max(0, demoConfig.totalInventory - photoCumulativeProcessed(bucketIdx));
+  const photoRemainingEnd   = Math.max(0, demoConfig.totalInventory - photoCumulativeProcessed(afterIdx));
+  const photoAfterCost      = photoRemainingEnd * demoConfig.perVinCost;
+  const photoDeltaCost      = photoRemainingStart * demoConfig.perVinCost - photoAfterCost;
+  const isZeroPhoto         = photoAfterCost === 0;
+
+  const photoStartPct = photoBefore > 0 ? (photoRemainingStart / demoConfig.totalInventory) * 100 : 100;
+  const photoEndPct   = photoBefore > 0 ? Math.max(0, (photoRemainingEnd / demoConfig.totalInventory) * 100) : 0;
 
   // ── Animation refs ───────────────────────────────────────────────────────────
-  const ttmAfterBarRef  = useRef<HTMLDivElement>(null);
-  const hcAfterBarRef   = useRef<HTMLDivElement>(null);
-  const ttmDeltaRef     = useRef<HTMLDivElement>(null);
-  const hcDeltaRef      = useRef<HTMLDivElement>(null);
-  const box1Ref         = useRef<HTMLDivElement>(null);
-  const box2Ref         = useRef<HTMLDivElement>(null);
-  const box3Ref         = useRef<HTMLDivElement>(null);
+  const ttmAfterBarRef   = useRef<HTMLDivElement>(null);
+  const hcAfterBarRef    = useRef<HTMLDivElement>(null);
+  const photoAfterBarRef = useRef<HTMLDivElement>(null);
+  const ttmDeltaRef      = useRef<HTMLDivElement>(null);
+  const hcDeltaRef       = useRef<HTMLDivElement>(null);
+  const photoDeltaRef    = useRef<HTMLDivElement>(null);
+  const box1Ref          = useRef<HTMLDivElement>(null);
+  const box2Ref          = useRef<HTMLDivElement>(null);
+  const box3Ref          = useRef<HTMLDivElement>(null);
 
   // ── Entrance animation ───────────────────────────────────────────────────────
   // Runs on mount (StepMetricsPanel mounts fresh when success state activates).
@@ -292,21 +315,35 @@ export function StepMetricsPanel({
       }, 0.1);
     }
 
+    if (!isAging && photoAfterBarRef.current) {
+      gsap.set(photoAfterBarRef.current, { width: `${photoStartPct}%` });
+      tl.to(photoAfterBarRef.current, {
+        width: `${photoEndPct}%`,
+        duration: 0.8,
+        ease: "power3.out",
+      }, 0.2);
+    }
+
     // Delta badges: scale + fade pop after bars settle
+    const deltaBadgeTargets = isAging
+      ? [ttmDeltaRef.current, hcDeltaRef.current]
+      : [ttmDeltaRef.current, hcDeltaRef.current, photoDeltaRef.current];
     tl.fromTo(
-      [ttmDeltaRef.current, hcDeltaRef.current],
+      deltaBadgeTargets,
       { opacity: 0, scale: 0.75, y: 4 },
       { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
       0.65
     );
 
-    // Metric boxes: staggered slide up
-    tl.fromTo(
-      [box1Ref.current, box2Ref.current, box3Ref.current],
-      { opacity: 0, y: 18 },
-      { opacity: 1, y: 0, duration: 0.42, ease: "power3.out", stagger: 0.09 },
-      0.78
-    );
+    // Metric boxes: staggered slide up (aging step only)
+    if (isAging) {
+      tl.fromTo(
+        [box1Ref.current, box2Ref.current, box3Ref.current],
+        { opacity: 0, y: 18 },
+        { opacity: 1, y: 0, duration: 0.42, ease: "power3.out", stagger: 0.09 },
+        0.78
+      );
+    }
 
     return () => { tl.kill(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -389,9 +426,9 @@ export function StepMetricsPanel({
             isZeroAfter={isZeroTTM}
           />
 
-          {/* ── Graph 2: Holding cost ───────────────────────────────────────────── */}
+          {/* ── Graph 2: Gross margin at risk ──────────────────────────────────── */}
           <GraphSection
-            title="Holding cost at risk · monthly"
+            title="Gross margin at risk"
             beforeDisplay={fmtK(hcBaseline)}
             afterDisplay={fmtK(hcAfter)}
             deltaDisplay={`+${fmtK(hcDelta)} recovered`}
@@ -404,60 +441,22 @@ export function StepMetricsPanel({
             afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
           />
 
-          {/* ── Three metric boxes ──────────────────────────────────────────────── */}
-          <div className="flex gap-[8px] pt-[10px]">
-        {/* Box 1 — step-specific primary outcome */}
-        {bucketKey === "nophoto" ? (
-          <MetricBox
-            ref={box1Ref}
-            icon={<Zap size={13} strokeWidth={2.5} />}
-            label="Matched and live"
-            delta={`${opp.vehiclesNoPhotos}`}
-            sub="0 photos → live in 4 min"
-            accent="#7C3AED"
+          {/* ── Graph 3: Photography cost ───────────────────────────────────────── */}
+          <GraphSection
+            title="Photography cost"
+            beforeDisplay={fmtK(photoBefore)}
+            afterDisplay={isZeroPhoto ? "$0" : fmtK(photoAfterCost)}
+            deltaDisplay={`+${fmtK(photoDeltaCost)} saved`}
+            deltaColor="#0891B2"
+            deltaBg="#E0F2FE"
+            startPct={photoStartPct}
+            endPct={photoEndPct}
+            afterBarRef={photoAfterBarRef}
+            deltaRef={photoDeltaRef}
+            afterBarGradient="linear-gradient(90deg, #0891B2 0%, #0E7490 100%)"
+            isZeroAfter={isZeroPhoto}
+            zeroLabel="Eliminated"
           />
-        ) : (
-          <MetricBox
-            ref={box1Ref}
-            icon={<Clock size={13} strokeWidth={2.5} />}
-            label="Days faster to live"
-            delta={`-${ttmDelta}d`}
-            sub={`${ttmBaseline}d → ${isZeroTTM ? "instant" : `${ttmAfter}d`}`}
-            accent={accent}
-          />
-        )}
-
-        {/* Box 2 — step-specific financial outcome */}
-        {bucketKey === "nophoto" ? (
-          <MetricBox
-            ref={box2Ref}
-            icon={<Camera size={13} strokeWidth={2.5} />}
-            label="Photo spend avoided"
-            delta={fmtK(photoSpendAvoided)}
-            sub={`${opp.vehiclesNoPhotos} cars × $${demoConfig.perVinCost}/VIN`}
-            accent="#0891B2"
-          />
-        ) : (
-          <MetricBox
-            ref={box2Ref}
-            icon={<DollarSign size={13} strokeWidth={2.5} />}
-            label="Holding cost recovered"
-            delta={`+${fmtK(hcDelta)}`}
-            sub="recovered this step"
-            accent="#10B981"
-          />
-        )}
-
-        {/* Box 3 — inventory score (all steps) */}
-        <MetricBox
-          ref={box3Ref}
-          icon={<Activity size={13} strokeWidth={2.5} />}
-          label="Listing quality"
-          delta={scoreAfter.toFixed(1)}
-          sub={`+${scoreDelta} pts  ·  0 – 10`}
-          accent="#7C3AED"
-        />
-          </div>
         </div>
       )}
     </div>

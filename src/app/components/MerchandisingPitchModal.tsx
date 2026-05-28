@@ -132,7 +132,7 @@ export function MerchandisingPitchModal({ open, onClose, onContinue, onBack, com
             <div>
               <Eyebrow>Step 02 · Smart Suite · Merchandising</Eyebrow>
               <h1 className="text-[32px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-[36px] tracking-tight">
-                Studio AI.
+                Studio AI
               </h1>
               <h1
                 className="text-[32px] font-bold font-['Inter:Bold',sans-serif] leading-[36px] tracking-tight"
@@ -146,7 +146,7 @@ export function MerchandisingPitchModal({ open, onClose, onContinue, onBack, com
                 Studio media, without the studio.
               </h1>
               <p className="mt-[10px] text-[13px] text-black/60 font-['Inter:Regular',sans-serif]">
-                Smartphone in, brand-perfect media out — in minutes.
+                Smartphone in, brand-perfect media out in minutes.
               </p>
             </div>
             <div className="relative rounded-[14px] overflow-hidden border border-black/8 bg-[#FAFAFB]">

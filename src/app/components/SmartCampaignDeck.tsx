@@ -167,7 +167,7 @@ export function SmartCampaignDeck({ open, onClose }: Props) {
             <div>
               <Eyebrow>Step 04 · Smart Suite · Performance</Eyebrow>
               <h1 className="text-[32px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-[36px] tracking-tight">
-                Smart Campaigns.
+                Smart Campaigns
               </h1>
               <h1
                 className="text-[32px] font-bold font-['Inter:Bold',sans-serif] leading-[36px] tracking-tight"
