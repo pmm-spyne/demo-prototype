@@ -83,7 +83,7 @@ export function NeedActionsWidget({
           </button>
           <p className="text-[18px] font-bold leading-[24px] font-['Inter:Bold',sans-serif]">
             <span className="text-[#DC2626]">{count} vehicles</span>
-            <span className="text-[#0a0a0a]"> not ready to sell!</span>
+            <span className="text-[#0a0a0a]"> off the frontline.</span>
           </p>
           <p className="mt-[2px] text-[12px] text-black/55 font-['Inter:Regular',sans-serif]">
             Add respective media to these aged vehicles.

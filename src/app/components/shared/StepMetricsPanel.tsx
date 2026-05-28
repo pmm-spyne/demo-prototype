@@ -3,6 +3,9 @@ import gsap from "gsap";
 import { Clock, DollarSign, Activity, Camera, Zap } from "lucide-react";
 import { calcOpportunity, type DemoConfig } from "../../types/demoConfig";
 
+// Light green palette used for metric boxes
+const METRIC_BOX_BG = "#ECFDF5";
+
 // ── Constants (mirrored from Demo2.tsx — keep in sync) ───────────────────────
 const SCORE_STEPS = [4.2, 5.3, 6.4, 7.5, 8.4, 9.1];
 const HC_STEPS    = [52_500, 48_200, 43_600, 37_300, 27_900, 10_000];
@@ -38,104 +41,6 @@ function fmtK(v: number): string {
   return v >= 1_000 ? `$${(v / 1_000).toFixed(1)}K` : `$${v.toLocaleString()}`;
 }
 
-// ── Small score odometer (for metric boxes) ───────────────────────────────────
-function ScoreOdometerInline({
-  before,
-  after,
-  animateKey,
-  delay = 1.03, // ~0.15 mount delay + ~0.88 within sequence
-}: {
-  before: number;
-  after: number;
-  animateKey: string;
-  delay?: number;
-}) {
-  const tensRef = useRef<HTMLDivElement>(null);
-  const onesRef = useRef<HTMLDivElement>(null);
-  const decRef = useRef<HTMLDivElement>(null);
-
-  const H = 22; // must match line-height below
-  const REP = 4; // 0-9 repeated 4x => 40 rows, enough for 2 cycles + diff
-
-  const fmt = (n: number) => n.toFixed(1).padStart(3, "0"); // "05.3"
-  const b = fmt(before);
-  const a = fmt(after);
-
-  const bT = parseInt(b[0], 10);
-  const bO = parseInt(b[1], 10);
-  const bD = parseInt(b[3], 10);
-
-  const aT = parseInt(a[0], 10);
-  const aO = parseInt(a[1], 10);
-  const aD = parseInt(a[3], 10);
-
-  useEffect(() => {
-    const roll = (ref: React.RefObject<HTMLDivElement>, from: number, to: number, extraDelay: number) => {
-      if (!ref.current) return null;
-      const cycles = 2;
-      const diff = (to - from + 10) % 10;
-      const steps = cycles * 10 + diff;
-      // start position
-      gsap.set(ref.current, { y: -from * H });
-      // animate down through repeated digit stack
-      return gsap.to(ref.current, {
-        y: -(from + steps) * H,
-        duration: 0.9,
-        delay: delay + extraDelay,
-        ease: "power3.out",
-      });
-    };
-
-    const t1 = roll(tensRef, bT, aT, 0);
-    const t2 = roll(onesRef, bO, aO, 0.03);
-    const t3 = roll(decRef,  bD, aD, 0.06);
-    return () => {
-      t1?.kill();
-      t2?.kill();
-      t3?.kill();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animateKey, bT, bO, bD, aT, aO, aD]);
-
-  const DigitStack = ({ innerRef }: { innerRef: React.RefObject<HTMLDivElement> }) => (
-    <div className="h-[22px] overflow-hidden">
-      <div ref={innerRef}>
-        {Array.from({ length: 10 * REP }).map((_, idx) => {
-          const v = idx % 10;
-          return (
-            <div
-              key={idx}
-              className="h-[22px] leading-[22px] text-[22px] font-bold tabular-nums font-['Inter:Bold',sans-serif]"
-            >
-              {v}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  return (
-    <div className="relative inline-flex items-end text-[#0a0a0a]">
-      {/* subtle odometer window highlights */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-x-[2px] -top-[2px] h-[8px] rounded-[8px]"
-        style={{ background: "linear-gradient(180deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.00) 100%)" }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-x-[2px] -bottom-[2px] h-[8px] rounded-[8px]"
-        style={{ background: "linear-gradient(0deg, rgba(0,0,0,0.10) 0%, rgba(0,0,0,0.00) 100%)" }}
-      />
-      <DigitStack innerRef={tensRef} />
-      <DigitStack innerRef={onesRef} />
-      <span className="h-[22px] leading-[22px] text-[22px] font-bold font-['Inter:Bold',sans-serif]">.</span>
-      <DigitStack innerRef={decRef} />
-    </div>
-  );
-}
-
 // ── GraphSection ──────────────────────────────────────────────────────────────
 interface GraphSectionProps {
   title: string;
@@ -167,79 +72,64 @@ function GraphSection({
   isZeroAfter,
 }: GraphSectionProps) {
   return (
-    <div
-      className="rounded-[16px] border border-black/[0.06] bg-white p-[16px] shadow-[0_1px_0_rgba(0,0,0,0.04)]"
-    >
+    <div className="mb-[20px]">
       {/* Title + animated delta badge */}
-      <div className="flex items-center justify-between mb-[12px]">
-        <p className="text-[9.5px] font-bold uppercase tracking-[1.5px] text-black/35 font-['Inter:Bold',sans-serif]">
+      <div className="flex items-center justify-between mb-[10px]">
+        <p className="text-[11px] font-semibold uppercase tracking-[1.2px] text-black/50 font-['Inter',sans-serif]">
           {title}
         </p>
         <div
           ref={deltaRef}
-          className="inline-flex items-center px-[10px] py-[4px] rounded-full text-[11px] font-bold font-['Inter:Bold',sans-serif]"
+          className="inline-flex items-center px-[8px] py-[3px] rounded-full text-[10px] font-bold font-['Inter',sans-serif]"
           style={{ background: deltaBg, color: deltaColor, opacity: 0 }}
         >
           {deltaDisplay}
         </div>
       </div>
 
-      {/* Joined Before/After pair (grouped set) */}
-      <div className="rounded-[14px] border border-black/[0.06] bg-[#F8FAFC] p-[12px]">
-        {/* Before row */}
-        <div className="flex items-center gap-[10px]">
-          <span className="w-[56px] text-[9px] font-bold uppercase tracking-[0.9px] text-black/30 font-['Inter:Bold',sans-serif]">
+      {/* Before bar */}
+      <div className="flex items-center gap-[10px] mb-[6px]">
+        <div className="flex-1 h-[20px] rounded-[6px] relative overflow-hidden">
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(90deg, rgba(244,63,94,0.28) 0%, rgba(244,63,94,0.12) 100%)" }}
+          />
+          <span className="absolute left-[10px] inset-y-0 flex items-center text-[8.5px] font-semibold uppercase tracking-[0.8px] text-black/35 font-['Inter',sans-serif] select-none">
             Before
           </span>
-          <div className="flex-1 h-[32px] rounded-[10px] overflow-hidden border border-black/[0.05] bg-white">
-            <div
-              className="h-full w-full"
-              style={{ background: "linear-gradient(90deg, rgba(244,63,94,0.20) 0%, rgba(244,63,94,0.10) 100%)" }}
-            />
-          </div>
-          <span className="w-[54px] text-right text-[13px] font-bold text-black/45 tabular-nums font-['Inter:Bold',sans-serif]">
-            {beforeDisplay}
-          </span>
         </div>
+        <span className="w-[46px] text-right text-[12px] font-semibold text-black/45 tabular-nums font-['Inter',sans-serif]">
+          {beforeDisplay}
+        </span>
+      </div>
 
-        <div className="h-[10px]" />
-
-        {/* After row */}
-        <div className="flex items-center gap-[10px]">
-          <span
-            className="w-[56px] text-[9px] font-bold uppercase tracking-[0.9px] font-['Inter:Bold',sans-serif]"
-            style={{ color: deltaColor }}
-          >
-            After
-          </span>
-          <div className="flex-1 h-[32px] rounded-[10px] overflow-hidden border border-black/[0.05] bg-white relative">
-            <div
-              className="absolute inset-0"
-              style={{ background: "linear-gradient(180deg, rgba(15,23,42,0.06) 0%, rgba(15,23,42,0.03) 100%)" }}
-            />
-            <div
-              ref={afterBarRef}
-              className="absolute inset-y-0 left-0 rounded-[10px]"
-              style={{
-                background: afterBarGradient,
-                width: `${startPct}%`,
-              }}
-            />
-            {isZeroAfter && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[11px] font-bold text-[#059669] font-['Inter:Bold',sans-serif]">
-                  Instant
-                </span>
-              </div>
-            )}
-          </div>
-          <span
-            className="w-[54px] text-right text-[13px] font-bold tabular-nums font-['Inter:Bold',sans-serif]"
-            style={{ color: deltaColor }}
-          >
-            {afterDisplay}
-          </span>
+      {/* After bar */}
+      <div className="flex items-center gap-[10px]">
+        <div className="flex-1 h-[20px] rounded-[6px] relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
+          <div
+            ref={afterBarRef}
+            className="absolute inset-y-0 left-0 rounded-[6px]"
+            style={{ background: afterBarGradient, width: `${startPct}%` }}
+          />
+          {!isZeroAfter && (
+            <span className="absolute left-[10px] inset-y-0 flex items-center text-[8.5px] font-semibold uppercase tracking-[0.8px] text-white/85 font-['Inter',sans-serif] select-none z-[1]">
+              After
+            </span>
+          )}
+          {isZeroAfter && (
+            <div className="absolute inset-0 flex items-center justify-center z-[1]">
+              <span className="text-[11px] font-bold text-[#059669] font-['Inter',sans-serif]">
+                Instant
+              </span>
+            </div>
+          )}
         </div>
+        <span
+          className="w-[46px] text-right text-[12px] font-semibold tabular-nums font-['Inter',sans-serif]"
+          style={{ color: deltaColor }}
+        >
+          {afterDisplay}
+        </span>
       </div>
     </div>
   );
@@ -258,22 +148,22 @@ const MetricBox = forwardRef<HTMLDivElement, MetricBoxProps>(
   ({ icon, label, delta, sub, accent }, ref) => (
     <div
       ref={ref}
-      className="flex-1 rounded-[12px] p-[14px] flex flex-col"
-      style={{ background: "#F3F4F6" }}
+      className="flex-1 rounded-[12px] p-[13px] flex flex-col"
+      style={{ background: METRIC_BOX_BG }}
     >
       <span
-        className="size-[24px] rounded-[6px] flex items-center justify-center mb-[10px]"
-        style={{ background: `${accent}18`, color: accent }}
+        className="size-[22px] rounded-[6px] flex items-center justify-center mb-[9px]"
+        style={{ background: `${accent}20`, color: accent }}
       >
         {icon}
       </span>
-      <p className="text-[22px] font-bold text-[#0a0a0a] leading-none tabular-nums font-['Inter:Bold',sans-serif]">
+      <p className="text-[20px] font-bold text-[#0a0a0a] leading-none tabular-nums font-['Inter',sans-serif]">
         {delta}
       </p>
-      <p className="mt-[5px] text-[8.5px] font-bold uppercase tracking-[0.5px] text-black/35 font-['Inter:Bold',sans-serif]">
+      <p className="mt-[5px] text-[8px] font-semibold uppercase tracking-[0.6px] text-black/40 font-['Inter',sans-serif]">
         {label}
       </p>
-      <p className="mt-[3px] text-[9.5px] text-black/40 leading-snug font-['Inter:Regular',sans-serif]">
+      <p className="mt-[2px] text-[9px] text-black/40 leading-snug font-['Inter',sans-serif]">
         {sub}
       </p>
     </div>
@@ -454,7 +344,7 @@ export function StepMetricsPanel({
             afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
           />
 
-          <div className="flex gap-[8px] pt-[2px]">
+          <div className="flex gap-[8px] pt-[10px]">
             <MetricBox
               ref={box1Ref}
               icon={<Zap size={13} strokeWidth={2.5} />}
@@ -475,13 +365,7 @@ export function StepMetricsPanel({
               ref={box3Ref}
               icon={<Activity size={13} strokeWidth={2.5} />}
               label="Listing quality"
-              delta={
-                <ScoreOdometerInline
-                  before={scoreBeforeAging}
-                  after={scoreAfterAging}
-                  animateKey={`aging-${bucketKey}`}
-                />
-              }
+              delta={scoreAfterAging.toFixed(1)}
               sub={`+${scoreDeltaAging} pts  ·  0 – 10`}
               accent="#7C3AED"
             />
@@ -521,7 +405,7 @@ export function StepMetricsPanel({
           />
 
           {/* ── Three metric boxes ──────────────────────────────────────────────── */}
-          <div className="flex gap-[8px] pt-[2px]">
+          <div className="flex gap-[8px] pt-[10px]">
         {/* Box 1 — step-specific primary outcome */}
         {bucketKey === "nophoto" ? (
           <MetricBox
@@ -564,18 +448,12 @@ export function StepMetricsPanel({
           />
         )}
 
-        {/* Box 3 — inventory score odometer (all steps) */}
+        {/* Box 3 — inventory score (all steps) */}
         <MetricBox
           ref={box3Ref}
           icon={<Activity size={13} strokeWidth={2.5} />}
           label="Listing quality"
-          delta={
-            <ScoreOdometerInline
-              before={scoreBefore}
-              after={scoreAfter}
-              animateKey={`score-${bucketKey}`}
-            />
-          }
+          delta={scoreAfter.toFixed(1)}
           sub={`+${scoreDelta} pts  ·  0 – 10`}
           accent="#7C3AED"
         />

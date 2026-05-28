@@ -13,7 +13,7 @@ const BUCKET_DEFS: Array<{
 }> = [
   { key: "raw",          label: "Raw media awaiting processing", icon: <Camera size={14} strokeWidth={2.2} /> },
   { key: "nophoto",      label: "No photos",                     icon: <ImageOff size={14} strokeWidth={2.2} /> },
-  { key: "cgi",          label: "Standard photos awaiting CGI",  icon: <Wand2 size={14} strokeWidth={2.2} /> },
+  { key: "cgi",          label: "Stock images",  icon: <Wand2 size={14} strokeWidth={2.2} /> },
   { key: "unsyndicated", label: "Not syndicated",                icon: <Send size={14} strokeWidth={2.2} /> },
   { key: "aging",        label: "Aging, high holding cost",      icon: <TrendingDown size={14} strokeWidth={2.2} /> },
 ];
@@ -122,13 +122,13 @@ export function InventoryDiagnosticFab({
           ) : (
             <p className="text-[22px] font-bold leading-[28px] font-['Inter:Bold',sans-serif] pr-[36px]">
               <span className="text-[#DC2626]">{totalNeedingAction} vehicles</span>
-              <span className="text-[#0a0a0a]"> not ready to sell!</span>
+              <span className="text-[#0a0a0a]"> off the frontline.</span>
             </p>
           )}
           <p className="mt-[6px] text-[13px] text-black/55 font-['Inter:Regular',sans-serif] leading-[18px]">
             {allResolved
               ? "Every diagnosis bucket has been worked through."
-              : "Click a bucket to see the pitch — then transform from there."}
+              : "Pick a category to see what's keeping each car off your lot."}
           </p>
         </div>
 
