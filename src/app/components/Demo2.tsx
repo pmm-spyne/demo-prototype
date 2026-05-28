@@ -1388,6 +1388,8 @@ export function Demo2({ demoConfig }: Demo2Props) {
         const successForActive = (activeBucket && completed[activeBucket] && bucketStep > 0) ? {
           dtfSaved,
           scoreGained: SCORE_BY_STEP[bucketStep] - SCORE_BY_STEP[bucketStep - 1],
+          scoreBefore: SCORE_BY_STEP[bucketStep - 1],
+          scoreAfter: SCORE_BY_STEP[bucketStep],
           savedDollars,
           // Studio AI (raw): custom headline + 4 chips that speak to the product value prop.
           // Step 1 does not affect days-to-frontline, so that chip is excluded.

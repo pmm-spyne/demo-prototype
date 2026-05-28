@@ -92,6 +92,9 @@ export interface PitchSuccess {
   dtfSaved: number;
   /** Inventory score gained this step (positive number) */
   scoreGained: number;
+  /** Inventory score before and after this step (0-10) */
+  scoreBefore?: number;
+  scoreAfter?: number;
   /** Holding-cost dollars recovered this step (positive number) */
   savedDollars: number;
   /**
@@ -161,6 +164,7 @@ export function PitchPanel(props: PitchPanelProps) {
   const sectionsRef = useRef<HTMLDivElement>(null);
   const heroImgRef = useRef<HTMLImageElement>(null);
   const proofValueRef = useRef<HTMLSpanElement>(null);
+  const scoreOdoRef = useRef<HTMLSpanElement>(null);
 
   // Animate the proof value as a counter when it contains a leading number.
   // (e.g. "+34% VDP views" → tweens 0 → 34 then renders the rest verbatim.)
@@ -229,6 +233,24 @@ export function PitchPanel(props: PitchPanelProps) {
     return () => { tl.kill(); };
   }, [open, product, parsedProof, success, featuresPhase]);
 
+  // Score odometer in success banner (Option A layout)
+  useEffect(() => {
+    if (!success || !scoreOdoRef.current) return;
+    const before = success.scoreBefore ?? 0;
+    const after = success.scoreAfter ?? (before + (success.scoreGained ?? 0));
+    const obj = { v: before };
+    const t = gsap.to(obj, {
+      v: after,
+      duration: 0.9,
+      delay: 0.25,
+      ease: "power2.out",
+      onUpdate: () => {
+        if (scoreOdoRef.current) scoreOdoRef.current.textContent = obj.v.toFixed(1);
+      },
+    });
+    return () => { t.kill(); };
+  }, [success]);
+
   if (!open) return null;
 
   return createPortal(
@@ -295,20 +317,38 @@ export function PitchPanel(props: PitchPanelProps) {
                 }}
               >
                 <Sparkles size={90} className="absolute -top-[12px] -right-[8px] text-white/10" strokeWidth={1.4} />
-                <div className="relative flex items-center gap-[12px]">
-                  <span className="size-[38px] rounded-full bg-white flex items-center justify-center text-[#059669] shrink-0 shadow-[0_4px_14px_rgba(0,0,0,0.18)]">
-                    <Check size={20} strokeWidth={3.2} />
-                  </span>
-                  <div className="min-w-0">
-                    <p className="inline-flex items-center gap-[5px] px-[7px] py-[1.5px] rounded-full bg-white/20 text-[9px] font-bold uppercase tracking-[1.2px] text-white mb-[4px] font-['Inter:Bold',sans-serif]">
-                      <Sparkles size={9} strokeWidth={2.6} />
-                      Win achieved
+                <div className="relative flex items-center justify-between gap-[16px]">
+                  {/* Left: win badge + copy */}
+                  <div className="flex items-center gap-[12px] min-w-0">
+                    <span className="size-[38px] rounded-full bg-white flex items-center justify-center text-[#059669] shrink-0 shadow-[0_4px_14px_rgba(0,0,0,0.18)]">
+                      <Check size={20} strokeWidth={3.2} />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="inline-flex items-center gap-[5px] px-[7px] py-[1.5px] rounded-full bg-white/20 text-[9px] font-bold uppercase tracking-[1.2px] text-white mb-[6px] font-['Inter:Bold',sans-serif]">
+                        <Sparkles size={9} strokeWidth={2.6} />
+                        Win achieved
+                      </p>
+                      <h3 className="text-[16px] font-bold text-white font-['Inter:Bold',sans-serif] leading-[20px]">
+                        {success.title ?? "Transformation complete."}
+                      </h3>
+                    </div>
+                  </div>
+
+                  {/* Right: inventory score odometer (no inner backgrounds) */}
+                  <div className="shrink-0 text-right">
+                    <p className="text-[9px] font-bold uppercase tracking-[1.1px] text-white/75 font-['Inter:Bold',sans-serif]">
+                      Inventory score
                     </p>
-                    <h3 className="text-[18px] font-bold text-white font-['Inter:Bold',sans-serif] leading-[22px]">
-                      {success.title ?? "Transformation complete."}
-                    </h3>
-                    <p className="mt-[3px] text-[12px] text-white/75 font-['Inter:Regular',sans-serif] leading-[16px]">
-                      {success.subtitle ?? "Here's the lift this step delivered."}
+                    <div className="mt-[4px] flex items-baseline justify-end gap-[6px] text-white">
+                      <span ref={scoreOdoRef} className="text-[28px] font-bold leading-none tabular-nums font-['Inter:Bold',sans-serif]">
+                        {(success.scoreAfter ?? (success.scoreBefore ?? 0) + (success.scoreGained ?? 0)).toFixed(1)}
+                      </span>
+                      <span className="text-[12px] font-semibold text-white/80 font-['Inter:Semi_Bold',sans-serif]">
+                        /10
+                      </span>
+                    </div>
+                    <p className="mt-[2px] text-[11px] font-semibold text-white/85 font-['Inter:Semi_Bold',sans-serif] tabular-nums">
+                      +{(success.scoreGained ?? 0).toFixed(1)}
                     </p>
                   </div>
                 </div>
