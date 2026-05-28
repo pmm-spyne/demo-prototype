@@ -268,7 +268,7 @@ export function InventorySnapshotModal({
           />
           <StatCard
             thumb={imgCgiTransformed}
-            label="CGI / Stock"
+            label="Stock"
             sublabel="Ready to upgrade"
             value={cgiPhotos}
             barColor="#7C3AED"

@@ -30,14 +30,23 @@ export interface PitchContent {
    * a paragraph. Each string becomes one pill tag.
    */
   problemChips?: string[];
+  /**
+   * When provided, renders a "The Solution" section with up to 3 icon-card boxes
+   * in a row between the problem section and "How it works".
+   */
+  solutionSection?: {
+    title?: string;
+    boxes: Array<{ icon: React.ReactNode; label: string; body: string }>;
+  };
   /** "How it works" bullets (max 6) */
   bullets: string[];
   /**
    * Controls the visual layout of the "How it works" section.
    * - "checklist" (default) — checkmark bullets, paragraph text
    * - "steps" — numbered vertical step list for short 3-4 word step names
+   * - "nodes" — horizontal connected-node timeline (max 4 nodes, no scroll)
    */
-  bulletStyle?: "checklist" | "steps";
+  bulletStyle?: "checklist" | "steps" | "nodes";
   /** ROI number + caption — proof.value animates in. Omit to hide the section. */
   proof?: { value: string; caption: string };
   /** Hero image (Demo 1 transformation artwork). */
@@ -135,7 +144,7 @@ const MAGENTA_GRAD = "linear-gradient(90deg, #FF5C9A 0%, #B651D7 100%)";
 export function PitchPanel(props: PitchPanelProps) {
   const {
     open, onClose, onAction, actionRunning, completed,
-    accent, product, step, tagline, punchline, problem, problemChips, bullets, bulletStyle = "checklist",
+    accent, product, step, tagline, punchline, problem, problemChips, solutionSection, bullets, bulletStyle = "checklist",
     proof, heroImage, heroNode, comparison, features, featuresPhase = "pitch", actionLabel,
     channels, selectedChannels, onChannelToggle,
     success,
@@ -351,7 +360,7 @@ export function PitchPanel(props: PitchPanelProps) {
 
           {/* Problem */}
           {!success && (
-            <div data-section className="mb-[18px]">
+            <div data-section className="mb-[16px]">
               <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[8px] font-['Inter:Bold',sans-serif]">
                 The problem
               </p>
@@ -375,17 +384,69 @@ export function PitchPanel(props: PitchPanelProps) {
             </div>
           )}
 
+          {/* The Solution — 3 icon-card boxes in a row */}
+          {!success && solutionSection && (
+            <div data-section className="mb-[16px]">
+              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[8px] font-['Inter:Bold',sans-serif]">
+                {solutionSection.title ?? "The Solution"}
+              </p>
+              <div className="grid grid-cols-3 gap-[8px]">
+                {solutionSection.boxes.slice(0, 3).map((box, i) => (
+                  <div
+                    key={i}
+                    className="rounded-[12px] border border-black/8 flex flex-col gap-[6px] p-[12px]"
+                    style={{ background: `${accent}0A` }}
+                  >
+                    <span
+                      className="size-[28px] rounded-[8px] flex items-center justify-center shrink-0"
+                      style={{ background: `${accent}20`, color: accent }}
+                    >
+                      {box.icon}
+                    </span>
+                    <p className="text-[11px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-[13px]">
+                      {box.label}
+                    </p>
+                    <p className="text-[10px] text-black/55 font-['Inter:Regular',sans-serif] leading-[13px]">
+                      {box.body}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* How it works */}
           {!success && (
             <div data-section className="mb-[20px]">
-              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[10px] font-['Inter:Bold',sans-serif]">
+              <p className="text-[10px] font-bold uppercase tracking-[1.4px] text-black/40 mb-[12px] font-['Inter:Bold',sans-serif]">
                 How it works
               </p>
-              {bulletStyle === "steps" ? (
+              {bulletStyle === "nodes" ? (
+                /* Horizontal connected-node timeline — max 4 steps */
+                <div className="relative flex items-start justify-between">
+                  <div
+                    className="absolute top-[13px] left-[14px] right-[14px] h-[2px]"
+                    style={{ background: `${accent}30` }}
+                    aria-hidden
+                  />
+                  {bullets.slice(0, 4).map((b, i) => (
+                    <div key={i} className="flex flex-col items-center gap-[8px] flex-1 relative z-[1]">
+                      <span
+                        className="size-[28px] rounded-full flex items-center justify-center text-[11px] font-bold font-['Inter:Bold',sans-serif] text-white shrink-0"
+                        style={{ background: accent }}
+                      >
+                        {i + 1}
+                      </span>
+                      <span className="text-[10.5px] text-[#1F2937] text-center leading-[1.35] font-['Inter:Medium',sans-serif] font-medium px-[4px]">
+                        {b}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : bulletStyle === "steps" ? (
                 <ol className="relative">
                   {bullets.map((b, i) => (
                     <li key={i} className="flex items-start gap-[12px] pb-[14px] last:pb-0 relative">
-                      {/* Vertical connector line */}
                       {i < bullets.length - 1 && (
                         <span
                           className="absolute left-[12px] top-[26px] bottom-0 w-[2px]"
@@ -393,7 +454,6 @@ export function PitchPanel(props: PitchPanelProps) {
                           aria-hidden
                         />
                       )}
-                      {/* Step number circle — solid fill, no border */}
                       <span
                         className="size-[26px] rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold font-['Inter:Bold',sans-serif] text-white z-[1]"
                         style={{ background: accent }}

@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import {
   Send, Layers, Globe, Sparkles, Timer, Building2, Wand2,
-  Rocket, Calendar, Search,
+  Rocket, Calendar, Search, Monitor, Palette, Smartphone,
 } from "lucide-react";
 import { IMSImportScreen } from "./IMSImportScreen";
 import { ScanningScreen } from "./ScanningScreen";
@@ -270,6 +270,276 @@ function StockPhotoGridHero() {
   );
 }
 
+// ─── Syndication hero ────────────────────────────────────────────────────────
+// 6 platform listing cards appear sequentially (staggered) — each gets a
+// green "Live" badge once published, then an "All live" status confirms.
+const SYNDICATION_CSS = `
+@keyframes synCard {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.93); }
+  8%   { opacity: 1; transform: translateY(0) scale(1); }
+  82%  { opacity: 1; transform: translateY(0) scale(1); }
+  94%  { opacity: 0; }
+  100% { opacity: 0; }
+}
+@keyframes synLive {
+  0%, 8%  { opacity: 0; transform: scale(0.7); }
+  16%     { opacity: 1; transform: scale(1); }
+  82%     { opacity: 1; }
+  94%     { opacity: 0; }
+  100%    { opacity: 0; }
+}
+@keyframes synAllLive {
+  0%, 64%  { opacity: 0; transform: translateX(6px); }
+  72%, 80% { opacity: 1; transform: translateX(0); }
+  92%      { opacity: 0; }
+  100%     { opacity: 0; }
+}
+`;
+
+function SyndicationHero() {
+  const DUR = "7s";
+  const platforms = [
+    { name: "AutoTrader", short: "AT",   color: "#FF6600", delay: "0s",    liveDel: "0.55s" },
+    { name: "Cars.com",   short: "Cars", color: "#005B99", delay: "0.6s",  liveDel: "1.15s" },
+    { name: "KBB",        short: "KBB",  color: "#003087", delay: "1.2s",  liveDel: "1.75s" },
+    { name: "Facebook",   short: "FB",   color: "#1877F2", delay: "1.8s",  liveDel: "2.35s" },
+    { name: "Instagram",  short: "IG",   color: "#C13584", delay: "2.4s",  liveDel: "2.95s" },
+    { name: "Dealer Site",short: "Site", color: "#4600F2", delay: "3.0s",  liveDel: "3.55s" },
+  ];
+
+  return (
+    <>
+      <style>{SYNDICATION_CSS}</style>
+      <div className="w-full rounded-[14px] border border-black/8 bg-[#111318] overflow-hidden p-[10px]">
+        <div className="grid grid-cols-3 gap-[5px]">
+          {platforms.map((p, i) => (
+            <div
+              key={i}
+              className="relative overflow-hidden rounded-[7px]"
+              style={{
+                aspectRatio: "4/3",
+                opacity: 0,
+                animation: `synCard ${DUR} ease-out ${p.delay} infinite`,
+              }}
+            >
+              {/* Platform accent stripe */}
+              <div className="absolute top-0 left-0 right-0 h-[3px] z-[1]" style={{ background: p.color }} />
+
+              {/* Car image */}
+              <img
+                src={i % 2 === 0 ? imgCgiTransformed : imgStudioExterior}
+                alt={p.name}
+                className="w-full h-full object-cover"
+              />
+
+              {/* Platform badge */}
+              <div
+                className="absolute bottom-[4px] left-[4px] px-[5px] py-[2px] rounded-[3px] text-[7.5px] font-bold text-white uppercase tracking-[0.4px] font-['Inter:Bold',sans-serif]"
+                style={{ background: `${p.color}DD` }}
+              >
+                {p.short}
+              </div>
+
+              {/* Live badge — appears after card */}
+              <div
+                className="absolute bottom-[4px] right-[4px] flex items-center gap-[2px] px-[5px] py-[2px] rounded-[3px] text-[7.5px] font-bold text-white font-['Inter:Bold',sans-serif]"
+                style={{
+                  background: "rgba(16,185,129,0.9)",
+                  opacity: 0,
+                  animation: `synLive ${DUR} ease-out ${p.liveDel} infinite`,
+                }}
+              >
+                ✓ Live
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Status bar */}
+        <div className="mt-[8px] flex items-center justify-between px-[1px]">
+          <div className="flex items-center gap-[5px]">
+            <span className="size-[5px] rounded-full bg-[#4600F2] animate-pulse" />
+            <span className="text-[9px] font-bold uppercase tracking-[0.9px] text-white/65 font-['Inter:Bold',sans-serif]">
+              Syndicating to 6 platforms
+            </span>
+          </div>
+          <div
+            className="flex items-center gap-[4px]"
+            style={{ opacity: 0, animation: `synAllLive ${DUR} ease-out 3.55s infinite` }}
+          >
+            <span className="size-[5px] rounded-full bg-[#10B981]" />
+            <span className="text-[9px] font-bold text-[#10B981] font-['Inter:Bold',sans-serif]">
+              All live
+            </span>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── Smart Campaigns overlay carousel ───────────────────────────────────────
+// A studio-grade car listing with 3 promotional overlay types cycling like a
+// carousel: Promo Overlay → Aged Inventory Push → Dealer Services Billboard.
+const SMART_CAMPAIGNS_CSS = `
+@keyframes scO1 {
+  0%    { opacity: 0; transform: translateX(14px); }
+  6%    { opacity: 1; transform: translateX(0); }
+  27%   { opacity: 1; transform: translateX(0); }
+  33%   { opacity: 0; transform: translateX(-14px); }
+  33.1% { opacity: 0; transform: translateX(14px); }
+  100%  { opacity: 0; transform: translateX(14px); }
+}
+@keyframes scO2 {
+  0%    { opacity: 0; transform: translateX(14px); }
+  33%   { opacity: 0; transform: translateX(14px); }
+  39%   { opacity: 1; transform: translateX(0); }
+  60%   { opacity: 1; transform: translateX(0); }
+  66%   { opacity: 0; transform: translateX(-14px); }
+  66.1% { opacity: 0; transform: translateX(14px); }
+  100%  { opacity: 0; transform: translateX(14px); }
+}
+@keyframes scO3 {
+  0%    { opacity: 0; transform: translateX(14px); }
+  66%   { opacity: 0; transform: translateX(14px); }
+  72%   { opacity: 1; transform: translateX(0); }
+  93%   { opacity: 1; transform: translateX(0); }
+  99%   { opacity: 0; transform: translateX(-14px); }
+  100%  { opacity: 0; transform: translateX(14px); }
+}
+@keyframes scDot1 {
+  0%, 33%, 100% { opacity: 0.3; transform: scale(1); }
+  6%, 27%       { opacity: 1;   transform: scale(1.4); }
+}
+@keyframes scDot2 {
+  0%, 100%  { opacity: 0.3; transform: scale(1); }
+  39%, 60%  { opacity: 1;   transform: scale(1.4); }
+}
+@keyframes scDot3 {
+  0%, 100%  { opacity: 0.3; transform: scale(1); }
+  72%, 93%  { opacity: 1;   transform: scale(1.4); }
+}
+`;
+
+function SmartCampaignsHero() {
+  const DUR = "9s";
+  return (
+    <>
+      <style>{SMART_CAMPAIGNS_CSS}</style>
+      <div
+        className="relative w-full overflow-hidden rounded-[14px] border border-black/8 bg-[#111318]"
+        style={{ aspectRatio: "16/9" }}
+      >
+        {/* Base: studio-grade car listing */}
+        <img
+          src={imgCgiTransformed}
+          alt="Car listing"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        {/* Gradient for text contrast */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/25" />
+
+        {/* ── OVERLAY 1: Promotional Offer ── */}
+        <div
+          className="absolute inset-0"
+          style={{ animation: `scO1 ${DUR} ease-in-out infinite` }}
+        >
+          <div
+            className="absolute top-[10px] right-[10px] px-[9px] py-[4px] rounded-[7px] text-[9px] font-bold text-white uppercase tracking-[0.6px] font-['Inter:Bold',sans-serif]"
+            style={{ background: "linear-gradient(135deg,#DC2626,#EF4444)", boxShadow: "0 3px 10px rgba(220,38,38,0.5)" }}
+          >
+            Special Offer
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px] flex items-center justify-between">
+            <span className="text-white text-[11px] font-semibold font-['Inter:Semi_Bold',sans-serif]">Finance from $299/mo</span>
+            <span className="text-[10px] text-white/65 font-['Inter:Regular',sans-serif]">0% APR available</span>
+          </div>
+          <div
+            className="absolute bottom-[10px] left-[10px] px-[7px] py-[2px] rounded-[4px] text-[8px] font-bold text-white/80 uppercase tracking-[0.8px] font-['Inter:Bold',sans-serif]"
+            style={{ background: "rgba(255,255,255,0.12)" }}
+          >
+            Promo Overlay
+          </div>
+        </div>
+
+        {/* ── OVERLAY 2: Aged Inventory Push ── */}
+        <div
+          className="absolute inset-0"
+          style={{ animation: `scO2 ${DUR} ease-in-out infinite` }}
+        >
+          <div
+            className="absolute top-[10px] right-[10px] flex items-center gap-[5px] px-[9px] py-[4px] rounded-[7px] text-[9px] font-bold text-white uppercase tracking-[0.6px] font-['Inter:Bold',sans-serif]"
+            style={{ background: "rgba(245,158,11,0.92)", boxShadow: "0 3px 10px rgba(245,158,11,0.45)" }}
+          >
+            <span>38 Days on Lot</span>
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px] flex items-center justify-between">
+            <span className="text-white text-[11px] font-semibold font-['Inter:Semi_Bold',sans-serif]">Price reduced $1,200</span>
+            <span
+              className="px-[7px] py-[3px] rounded-[5px] text-[9px] font-bold text-white font-['Inter:Bold',sans-serif]"
+              style={{ background: "rgba(220,38,38,0.88)" }}
+            >
+              Act Now
+            </span>
+          </div>
+          <div
+            className="absolute bottom-[10px] left-[10px] px-[7px] py-[2px] rounded-[4px] text-[8px] font-bold text-white/80 uppercase tracking-[0.8px] font-['Inter:Bold',sans-serif]"
+            style={{ background: "rgba(255,255,255,0.12)" }}
+          >
+            Aged Inventory
+          </div>
+        </div>
+
+        {/* ── OVERLAY 3: Dealer Services Billboard ── */}
+        <div
+          className="absolute inset-0"
+          style={{ animation: `scO3 ${DUR} ease-in-out infinite` }}
+        >
+          <div
+            className="absolute top-[10px] right-[10px] px-[9px] py-[4px] rounded-[7px] text-[9px] font-bold text-white uppercase tracking-[0.6px] font-['Inter:Bold',sans-serif]"
+            style={{ background: "rgba(16,185,129,0.92)", boxShadow: "0 3px 10px rgba(16,185,129,0.45)" }}
+          >
+            Certified Pre-Owned
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px] flex items-center gap-[6px]">
+            {["Free Delivery", "2-Year Warranty", "Remote Buying"].map((t, i) => (
+              <span key={i} className="flex items-center gap-[6px]">
+                {i > 0 && <span className="size-[3px] rounded-full bg-white/40" />}
+                <span className="text-white text-[11px] font-semibold font-['Inter:Semi_Bold',sans-serif]">{t}</span>
+              </span>
+            ))}
+          </div>
+          <div
+            className="absolute bottom-[10px] left-[10px] px-[7px] py-[2px] rounded-[4px] text-[8px] font-bold text-white/80 uppercase tracking-[0.8px] font-['Inter:Bold',sans-serif]"
+            style={{ background: "rgba(255,255,255,0.12)" }}
+          >
+            Billboard
+          </div>
+        </div>
+
+        {/* Always-visible: Active Campaign badge top-left */}
+        <div className="absolute top-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
+          <span className="size-[5px] rounded-full bg-[#DC2626] animate-pulse" />
+          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
+            Active Campaign
+          </span>
+        </div>
+
+        {/* Carousel indicator dots */}
+        <div className="absolute top-[10px] right-[10px] flex gap-[4px]" style={{ marginTop: 32 }}>
+          {([`scDot1`, `scDot2`, `scDot3`] as const).map((anim, i) => (
+            <span
+              key={i}
+              className="size-[5px] rounded-full bg-white"
+              style={{ animation: `${anim} ${DUR} ease-in-out infinite` }}
+            />
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ─── Raw scan animation ───────────────────────────────────────────────────────
 // CSS keyframes injected once — simulates a Studio AI scan pass:
 // a glowing magenta line sweeps left→right, revealing the studio output.
@@ -390,15 +660,33 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "No 360 / Video",
       "Inconsistent Branding",
     ],
+    solutionSection: {
+      title: "The Solution: Smart Shoot",
+      boxes: [
+        {
+          icon: <Monitor size={14} strokeWidth={2} />,
+          label: "Interactive VDPs",
+          body: "Studio images, car tours and video tours from your smartphone.",
+        },
+        {
+          icon: <Palette size={14} strokeWidth={2} />,
+          label: "Dealership Branding",
+          body: "Wide range of studio backgrounds and dealership branding.",
+        },
+        {
+          icon: <Smartphone size={14} strokeWidth={2} />,
+          label: "Studio Grade Without Agencies",
+          body: "Shoot with minimal training on a phone or import from IMS.",
+        },
+      ],
+    },
     bullets: [
-      "Shoot with Studio AI",
-      "Select background",
-      "Add dealership logo",
-      "Blur number plate",
-      "Click on Generate",
-      "Studio-grade listing ready",
+      "Shoot with Studio App",
+      "Choose background",
+      "Hit Create Listing",
+      "Studio grade assets ready",
     ],
-    bulletStyle: "steps",
+    bulletStyle: "nodes",
     heroNode: <RawScanHero />,
     actionLabel: "Process all 89",
   },
@@ -409,12 +697,43 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     punchline: "Go live on Day 0.",
     tagline: "Publish before the vehicle even arrives.",
     problem:
-      "The vehicle is acquired but the shoot is pending or it hasn't hit your lot yet. Every day your listing sits dark, buyers are clicking the competition while holding cost eats at your margin.",
-    bullets: [
-      "VIN decoded to match year, make, model, trim, and color in your media library",
-      "Matching media assigned in minutes. The unit goes live before anyone touches a camera",
-      "Real photos replace SmartMatch images the moment you shoot them. No manual cleanup needed",
+      "The vehicle is acquired but the shoot is pending or it has not hit your lot yet. Every day your listing sits dark, buyers are clicking the competition while holding cost eats at your margin.",
+    problemChips: [
+      "Dark Listings, Zero Leads",
+      "3-5 Days to Go Live",
+      "Shoot Scheduling Delays",
+      "Repeat Reshoots",
+      "Photography Costs",
+      "Holding Cost",
+      "High Time to Live",
     ],
+    solutionSection: {
+      title: "The Solution: Smart Match",
+      boxes: [
+        {
+          icon: <Search size={14} strokeWidth={2} />,
+          label: "Smart VIN Matching",
+          body: "Matched on year, make, model, trim and color. Cloned automatically.",
+        },
+        {
+          icon: <Rocket size={14} strokeWidth={2} />,
+          label: "Go Live Instantly",
+          body: "Published in seconds. Capture demand from Day 0.",
+        },
+        {
+          icon: <Building2 size={14} strokeWidth={2} />,
+          label: "Reuse Assets Across Rooftops",
+          body: "Shot once, live-ready across every dealership in your group.",
+        },
+      ],
+    },
+    bullets: [
+      "New car acquired",
+      "Enter VIN or import from IMS",
+      "Matching VIN found",
+      "Go live with studio grade assets",
+    ],
+    bulletStyle: "nodes",
     heroNode: <SmartMatchScanHero />,
     features: [
       { icon: <Rocket size={16} strokeWidth={2.2} />,   title: "Live Instantly",  tagline: "Skip the shoot. Publish in seconds.", accent: "#4600F2" },
@@ -428,15 +747,46 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     accent: "#7C3AED",
     step: "Step 03 · Studio AI · Stock Photos",
     product: "Studio AI.",
-    punchline: "Consistent VDPs. No stock photo chaos.",
-    tagline: "Replace inconsistent stock images with brand-matched visuals — across every VDP, at scale.",
+    punchline: "Skip Stock Photos. Build Your Brand.",
+    tagline: "Replace inconsistent OEM images with studio-grade visuals across every VDP, at scale.",
     problem:
       "Stock images on your VDPs are hurting your dealership brand. Inconsistent backgrounds, watermarks, and non-standard crops across listings reduce buyer trust and suppress VDP clicks.",
-    bullets: [
-      "Studio AI scans every stock photo listing and flags inconsistencies — mismatched backgrounds, watermarks, and off-brand crops",
-      "Each image is processed to your dealership's visual standard: uniform angles, clean backgrounds, and consistent branding across every vehicle",
-      "Brand-consistent VDP images go live in minutes, replacing stock photos at scale with no reshoots and no manual editing",
+    problemChips: [
+      "Inconsistent VDPs",
+      "Watermarked Images",
+      "Off-Brand Visuals",
+      "Reduced Buyer Trust",
+      "Low Marketplace CTR",
+      "Non-Standard Crops",
+      "Perceived Unreliability",
     ],
+    solutionSection: {
+      title: "The Solution: Studio AI",
+      boxes: [
+        {
+          icon: <Layers size={14} strokeWidth={2} />,
+          label: "Consistent VDPs",
+          body: "Uniform angles, clean backgrounds and studio grade on every VDP.",
+        },
+        {
+          icon: <Globe size={14} strokeWidth={2} />,
+          label: "Increased Competitiveness",
+          body: "Beat stock photos on every marketplace and drive higher VDP clicks.",
+        },
+        {
+          icon: <Sparkles size={14} strokeWidth={2} />,
+          label: "Higher Buyer Trust",
+          body: "Consistent imagery builds credibility and keeps buyers engaged.",
+        },
+      ],
+    },
+    bullets: [
+      "Import inventory",
+      "Smart Match or Smart Shoot",
+      "Studio grade assets ready",
+      "Push live to all platforms",
+    ],
+    bulletStyle: "nodes",
     heroNode: <StockPhotoGridHero />,
     comparison: {
       beforeLabel: "Standard processed",
@@ -451,43 +801,99 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     step: "Step 04 · Studio AI · Syndication",
     product: "Syndication.",
     punchline: "Every channel, one click.",
-    tagline: "Push every studio-grade listing to the marketplaces buyers actually use.",
+    tagline: "Push every studio-grade listing to the marketplaces buyers actually use, instantly.",
     problem:
       "Your vehicles are listing-ready but visibility stops at your website. Buyers searching AutoTrader, Cars.com, and KBB never see them. Every day a car sits off-marketplace is another day holding cost compounds with zero buyer reach.",
-    bullets: [
-      "AutoTrader, Cars.com, KBB, Facebook, Instagram, and your dealer site. All pushed in a single action.",
-      "Channel-specific formatting handled automatically. Aspect ratios, character limits, and listing specs matched per platform.",
-      "Publish status synced back to your IMS the moment a listing goes live. Your team never re-publishes by mistake.",
+    problemChips: [
+      "Zero Off-Site Visibility",
+      "Manual Publishing",
+      "Platform Reformatting",
+      "Slow Time to Live",
+      "No Publish Confirmation",
+      "Duplicate Listing Risk",
+      "IMS Sync Delays",
     ],
-    heroImage: imgCampaigns,
+    solutionSection: {
+      title: "The Solution: Syndication",
+      boxes: [
+        {
+          icon: <Globe size={14} strokeWidth={2} />,
+          label: "Instant Multi-Platform Reach",
+          body: "AutoTrader, Cars.com, KBB, Facebook and Instagram in one action.",
+        },
+        {
+          icon: <Wand2 size={14} strokeWidth={2} />,
+          label: "Marketplace-Specific Formatting",
+          body: "Aspect ratios, specs and character limits matched per platform.",
+        },
+        {
+          icon: <Send size={14} strokeWidth={2} />,
+          label: "Safe Publish Tracking",
+          body: "Confirms each listing published safely. Status synced to IMS.",
+        },
+      ],
+    },
+    bullets: [
+      "Select listings to syndicate",
+      "Pick your marketplaces",
+      "One-click publish",
+      "Track listing health",
+    ],
+    bulletStyle: "nodes",
+    heroNode: <SyndicationHero />,
     actionLabel: "Syndicate all 156",
   },
   aging: {
     accent: "#DC2626",
     step: "Step 05 · Studio AI · Smart Campaigns",
     product: "Smart Campaigns.",
-    punchline: "Stop the bleed. Move aged stock.",
-    tagline: "Targeted campaigns for inventory that's been sitting too long and costing too much.",
+    punchline: "Right offer. Right car. Right time.",
+    tagline: "Run visual promotions across your entire inventory automatically. No briefing cycle, no manual updates.",
     problem:
-      "34 units are past 40 days on lot at $45/day — that's over $1,530 per car per month evaporating. Standard price cuts alone won't move aged stock. What moves it is targeted visibility in front of the right buyers at the right moment.",
-    bullets: [
-      "Aged inventory automatically segmented by days-on-lot, price band, and in-market shopper demand signals",
-      "Purpose-built campaign templates for aged stock: price-drop urgency, finance-led offers, and trade-in capture",
-      "Every campaign shows the holding-cost math — so you know exactly what moving each car is worth before you launch",
+      "Dealership campaigns are fragmented, manual, and easy to miss. Promotions expire unnoticed, aged inventory looks identical to fresh arrivals, and every deal becomes a price negotiation when your value goes unseen.",
+    problemChips: [
+      "Promotions Expire Unnoticed",
+      "Aged Inventory Invisible",
+      "Manual Campaign Setup",
+      "Inconsistent Brand Presence",
+      "Competing on Price Alone",
+      "Value Goes Unseen",
+      "Missed Seasonal Timing",
     ],
-    proof: { value: "$52K saved", caption: "Average monthly holding-cost reduction across dealers running Smart Campaigns on aged inventory past 40 days." },
-    heroImage: imgCampaigns,
-    comparison: {
-      beforeLabel: "Standard listing",
-      afterLabel: "Campaign-grade",
-      before: <img src={imgCgiFront} alt="Standard CGI image" className="w-full h-full object-cover" />,
-      after:  <img src={imgCgiTransformed} alt="Campaign-grade CGI" className="w-full h-full object-cover" />,
+    solutionSection: {
+      title: "The Solution: Smart Campaigns",
+      boxes: [
+        {
+          icon: <Sparkles size={14} strokeWidth={2} />,
+          label: "Automated Visual Promotions",
+          body: "Overlays, billboards and dynamic text applied across your inventory automatically.",
+        },
+        {
+          icon: <Timer size={14} strokeWidth={2} />,
+          label: "Aged Inventory Targeting",
+          body: "Listings past 30 days get a visual urgency push automatically.",
+        },
+        {
+          icon: <Building2 size={14} strokeWidth={2} />,
+          label: "Multi-Rooftop Campaigns",
+          body: "One campaign across all locations. Every listing stays on-brand.",
+        },
+      ],
     },
+    bullets: [
+      "Set up your creatives",
+      "Build campaign rules",
+      "Preview per VIN",
+      "Launch and run automatically",
+    ],
+    bulletStyle: "nodes",
+    heroNode: <SmartCampaignsHero />,
     features: [
       { icon: <Sparkles size={16} strokeWidth={2.2} />,  title: "Targeted Audiences", tagline: "In-market shoppers, auto-segmented.", accent: "#DC2626" },
       { icon: <Timer size={16} strokeWidth={2.2} />,     title: "Holding-Cost ROI",   tagline: "$/day math on every campaign run.", accent: "#F59E0B" },
       { icon: <Building2 size={16} strokeWidth={2.2} />, title: "Group-Wide",         tagline: "Roll the same campaign across lots.", accent: "#4600F2" },
     ],
+    featuresPhase: "success",
     actionLabel: "Launch campaigns",
   },
 };
