@@ -693,31 +693,27 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problem:
       "The vehicle is acquired but the shoot is pending or it has not hit your lot yet. Every day your listing sits dark, buyers are clicking the competition while holding cost eats at your margin.",
     problemChips: [
-      "Dark Listings, Zero Leads",
-      "3-5 Days to Go Live",
-      "Shoot Scheduling Delays",
-      "Repeat Reshoots",
+      "Dark Listings",
+      "Slow Go-Live",
       "Photography Costs",
-      "Holding Cost",
-      "High Time to Live",
     ],
     solutionSection: {
-      title: "The Solution: Smart Match",
+      title: "The Solution",
       boxes: [
         {
           icon: <Search size={14} strokeWidth={2} />,
           label: "Smart VIN Matching",
-          body: "Matched on year, make, model, trim and color. Cloned automatically.",
+          body: "Matches on year, make, model, trim and color, cloning assets automatically",
         },
         {
           icon: <Rocket size={14} strokeWidth={2} />,
           label: "Go Live Instantly",
-          body: "Published in seconds. Capture demand from Day 0.",
+          body: "Publishes your listing in seconds, capturing demand from the moment a car arrives",
         },
         {
           icon: <Building2 size={14} strokeWidth={2} />,
-          label: "Reuse Assets Across Rooftops",
-          body: "Shot once, live-ready across every dealership in your group.",
+          label: "Reuse Across Rooftops",
+          body: "One set of assets deployed instantly across every rooftop in your dealer group",
         },
       ],
     },
@@ -748,29 +744,25 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problemChips: [
       "Inconsistent VDPs",
       "Watermarked Images",
-      "Off-Brand Visuals",
-      "Reduced Buyer Trust",
       "Low Marketplace CTR",
-      "Non-Standard Crops",
-      "Perceived Unreliability",
     ],
     solutionSection: {
-      title: "The Solution: Studio AI",
+      title: "The Solution",
       boxes: [
         {
           icon: <Layers size={14} strokeWidth={2} />,
           label: "Consistent VDPs",
-          body: "Uniform angles, clean backgrounds and studio grade on every VDP.",
+          body: "Delivers uniform angles, clean backgrounds and studio-grade quality across every VDP",
         },
         {
           icon: <Globe size={14} strokeWidth={2} />,
           label: "Increased Competitiveness",
-          body: "Beat stock photos on every marketplace and drive higher VDP clicks.",
+          body: "Outperforms stock photos on every marketplace, driving higher CTR and engagement",
         },
         {
           icon: <Sparkles size={14} strokeWidth={2} />,
           label: "Higher Buyer Trust",
-          body: "Consistent imagery builds credibility and keeps buyers engaged.",
+          body: "Consistent premium imagery builds credibility and keeps shoppers on your listing longer",
         },
       ],
     },
@@ -801,29 +793,25 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problemChips: [
       "Zero Off-Site Visibility",
       "Manual Publishing",
-      "Platform Reformatting",
       "Slow Time to Live",
-      "No Publish Confirmation",
-      "Duplicate Listing Risk",
-      "IMS Sync Delays",
     ],
     solutionSection: {
-      title: "The Solution: Syndication",
+      title: "The Solution",
       boxes: [
         {
           icon: <Globe size={14} strokeWidth={2} />,
           label: "Instant Multi-Platform Reach",
-          body: "AutoTrader, Cars.com, KBB, Facebook and Instagram in one action.",
+          body: "Pushes listings to AutoTrader, Cars.com, KBB, Facebook and Instagram in a single action",
         },
         {
           icon: <Wand2 size={14} strokeWidth={2} />,
-          label: "Marketplace-Specific Formatting",
-          body: "Aspect ratios, specs and character limits matched per platform.",
+          label: "Marketplace Formatting",
+          body: "Formats each listing to match the aspect ratios, specs and character limits of every platform",
         },
         {
           icon: <Send size={14} strokeWidth={2} />,
           label: "Safe Publish Tracking",
-          body: "Confirms each listing published safely. Status synced to IMS.",
+          body: "Confirms every listing published successfully with status synced back to your IMS",
         },
       ],
     },
@@ -846,31 +834,27 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problem:
       "Dealership campaigns are fragmented, manual, and easy to miss. Promotions expire unnoticed, aged inventory looks identical to fresh arrivals, and every deal becomes a price negotiation when your value goes unseen.",
     problemChips: [
-      "Promotions Expire Unnoticed",
       "Aged Inventory Invisible",
       "Manual Campaign Setup",
-      "Inconsistent Brand Presence",
       "Competing on Price Alone",
-      "Value Goes Unseen",
-      "Missed Seasonal Timing",
     ],
     solutionSection: {
-      title: "The Solution: Smart Campaigns",
+      title: "The Solution",
       boxes: [
         {
           icon: <Sparkles size={14} strokeWidth={2} />,
           label: "Automated Visual Promotions",
-          body: "Overlays, billboards and dynamic text applied across your inventory automatically.",
+          body: "Applies overlays, banners and dynamic text across your full inventory without any manual input",
         },
         {
           icon: <Timer size={14} strokeWidth={2} />,
           label: "Aged Inventory Targeting",
-          body: "Listings past 30 days get a visual urgency push automatically.",
+          body: "Identifies listings past 30 days and applies a visual urgency push automatically",
         },
         {
           icon: <Building2 size={14} strokeWidth={2} />,
           label: "Multi-Rooftop Campaigns",
-          body: "One campaign across all locations. Every listing stays on-brand.",
+          body: "Rolls out one campaign across all locations, keeping every listing on-brand",
         },
       ],
     },
