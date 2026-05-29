@@ -660,17 +660,17 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Smartphone size={14} strokeWidth={2} />,
           label: "Guided App Shoots",
-          body: "Anyone can shoot with the easy-to-use Studio AI app, eliminating photography spend",
+          body: "Staff shoot with the Studio AI app, cutting out photography spend",
         },
         {
           icon: <Monitor size={14} strokeWidth={2} />,
           label: "Instant Listing Creation",
-          body: "Creates studio-quality images and listings without physical setup or editing delays",
+          body: "Creates studio-quality listings without physical setup or editing",
         },
         {
           icon: <Palette size={14} strokeWidth={2} />,
           label: "Dealer Branding",
-          body: "Applies consistent branded environments across your entire inventory",
+          body: "Applies consistent branded environments across your inventory",
         },
       ],
     },
@@ -703,17 +703,17 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Search size={14} strokeWidth={2} />,
           label: "Smart VIN Match",
-          body: "Matches on year, make, model, trim and color, cloning assets automatically",
+          body: "Matched by spec and color, cloning studio assets automatically",
         },
         {
           icon: <Rocket size={14} strokeWidth={2} />,
           label: "Instant TTM",
-          body: "Publishes your listing in seconds, capturing demand from the moment a car arrives",
+          body: "Publishes in seconds, capturing demand from day of acquisition",
         },
         {
           icon: <Building2 size={14} strokeWidth={2} />,
           label: "Group Asset Library",
-          body: "Assets shot once are instantly available across every rooftop in your dealer group",
+          body: "Assets shot once are shared instantly across every rooftop",
         },
       ],
     },
@@ -752,17 +752,17 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Layers size={14} strokeWidth={2} />,
           label: "Real VIN-Matched Assets",
-          body: "Searches for real vehicle images matched by VIN, replacing stock photos with authentic car assets",
+          body: "Finds real images by VIN match, replacing stock photos instantly",
         },
         {
           icon: <Globe size={14} strokeWidth={2} />,
           label: "Consistent VDP and VLP",
-          body: "Ensures your vehicle detail and listing pages show the same real images, building buyer confidence",
+          body: "Ensures VDP and VLP show the same real images consistently",
         },
         {
           icon: <Sparkles size={14} strokeWidth={2} />,
           label: "Higher Buyer Trust",
-          body: "Real car photos outperform stock images, keeping shoppers engaged and driving more VDP clicks",
+          body: "Real photos outperform stock, driving engagement and more VDP clicks",
         },
       ],
     },
@@ -801,17 +801,17 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Globe size={14} strokeWidth={2} />,
           label: "Instant Multi-Platform Reach",
-          body: "Pushes listings to AutoTrader, Cars.com, KBB, Facebook and Instagram in a single action",
+          body: "Publishes across popular marketplaces and social channels with one click",
         },
         {
           icon: <Wand2 size={14} strokeWidth={2} />,
           label: "Multi-Format Automation",
-          body: "Auto-generates marketplace-ready aspect ratios, specs and character limits for every platform",
+          body: "Auto-generates the right format, specs and limits per marketplace",
         },
         {
           icon: <Send size={14} strokeWidth={2} />,
           label: "Unlimited Throughput",
-          body: "No vendor or team capacity limits — publish your entire inventory in one action at any scale",
+          body: "No vendor bottlenecks, publish your full inventory at any scale",
         },
       ],
     },
@@ -844,7 +844,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Sparkles size={14} strokeWidth={2} />,
           label: "Automated Visual Promotions",
-          body: "Applies overlays, billboards and dynamic text across your full inventory without any manual input",
+          body: "Applies overlays and dynamic text to your inventory automatically",
         },
         {
           icon: <Timer size={14} strokeWidth={2} />,
@@ -854,7 +854,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Building2 size={14} strokeWidth={2} />,
           label: "Dynamic Offer Overlays",
-          body: "Showcases financing, highlights and vehicle specs on every listing so buyers see your value before they see the price",
+          body: "Shows your full value upfront before a buyer reaches the price",
         },
       ],
     },
