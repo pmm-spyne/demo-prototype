@@ -725,12 +725,6 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     ],
     bulletStyle: "nodes",
     heroNode: <SmartMatchScanHero />,
-    features: [
-      { icon: <Rocket size={16} strokeWidth={2.2} />,   title: "Live Instantly",  tagline: "Skip the shoot. Publish in seconds.", accent: "#4600F2" },
-      { icon: <Calendar size={16} strokeWidth={2.2} />, title: "List Pre-Arrival", tagline: "Live days before the car lands.",       accent: "#10B981" },
-      { icon: <Search size={16} strokeWidth={2.2} />,   title: "Spec Matching",   tagline: "Year, make, model, trim, color.",       accent: "#E91E63" },
-    ],
-    featuresPhase: "success",
     actionLabel: "Run SmartMatch",
   },
   cgi: {

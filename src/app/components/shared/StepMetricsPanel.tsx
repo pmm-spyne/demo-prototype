@@ -194,7 +194,6 @@ export function StepMetricsPanel({
   successMode: _successMode = false,
 }: StepMetricsPanelProps) {
   const bucketIdx = BUCKET_ORDER.indexOf(bucketKey);
-  // Step 5 metrics (aging) are supported. Step 4 still handled separately.
   if (bucketKey === "unsyndicated") return null;
 
   const opp = calcOpportunity(demoConfig);
@@ -203,15 +202,16 @@ export function StepMetricsPanel({
 
   const afterIdx = bucketIdx + 1;
 
-  // ── Step 5 (aging) view values (also used for animation) ────────────────────
   const isAging = bucketKey === "aging";
+  const isRaw   = bucketKey === "raw";
+
+  // ── Step 5 (aging) values ────────────────────────────────────────────────────
   const agingTargetUnits = useMemo(() => Math.round(demoConfig.totalInventory * 0.10), [demoConfig.totalInventory]);
   const agingUnitsBefore = opp.agedVehicles;
   const agingUnitsAfter  = agingTargetUnits;
   const agingUnitsDelta  = agingUnitsBefore - agingUnitsAfter;
 
   const agingCostBefore = opp.agedMonthly;
-  // Reduce cost proportionally with aged cohort shrinking from 15% → 10%
   const agingCostAfter = Math.round(agingCostBefore * (10 / 15));
   const agingCostDelta = agingCostBefore - agingCostAfter;
 
@@ -220,15 +220,11 @@ export function StepMetricsPanel({
   const agingCostStartPct = agingCostBefore > 0 ? 100 : 0;
   const agingCostEndPct   = agingCostBefore > 0 ? Math.max(4, (agingCostAfter / agingCostBefore) * 100) : 4;
 
-  // Score values for step 5
   const scoreBeforeAging = SCORE_STEPS[4];
   const scoreAfterAging  = SCORE_STEPS[5];
   const scoreDeltaAging  = +(scoreAfterAging - scoreBeforeAging).toFixed(1);
 
-  // ── TTM values ───────────────────────────────────────────────────────────────
-  // Before: dealer's original baseline — fixed across all steps
-  // Start:  previous step's After value — where animation begins
-  // After:  this step's target — where animation ends
+  // ── TTM values ────────────────────────────────────────────────────────────────
   const ttmBaseline  = dtf[0];
   const ttmPrevAfter = dtf[bucketIdx];
   const ttmAfter     = TTM_AFTER_OVERRIDE[bucketKey] ?? dtf[afterIdx];
@@ -238,18 +234,16 @@ export function StepMetricsPanel({
   const ttmStartPct = ttmBaseline > 0 ? (ttmPrevAfter / ttmBaseline) * 100 : 100;
   const ttmEndPct   = ttmBaseline > 0 ? (ttmAfter / ttmBaseline) * 100 : 0;
 
-  // ── HC values ────────────────────────────────────────────────────────────────
+  // ── HC values ─────────────────────────────────────────────────────────────────
   const hcBaseline  = hc[0];
   const hcPrevAfter = hc[bucketIdx];
   const hcAfter     = hc[afterIdx];
-  const hcDelta     = hcPrevAfter - hcAfter; // recovered THIS step
+  const hcDelta     = hcPrevAfter - hcAfter;
 
   const hcStartPct = hcBaseline > 0 ? (hcPrevAfter / hcBaseline) * 100 : 100;
   const hcEndPct   = hcBaseline > 0 ? Math.max(4, (hcAfter / hcBaseline) * 100) : 4;
 
-  // ── Photography cost (Graph 3, steps 1-3) ────────────────────────────────────
-  // Before: static = totalInventory × perVinCost (baseline dealer spend)
-  // After:  remaining VINs × perVinCost — reduces as each step processes VINs
+  // ── Photography cost ──────────────────────────────────────────────────────────
   const photoBefore = demoConfig.totalInventory * demoConfig.perVinCost;
   const photoScaleFactor = demoConfig.totalInventory / 200;
 
@@ -270,78 +264,87 @@ export function StepMetricsPanel({
   const photoStartPct = photoBefore > 0 ? (photoRemainingStart / demoConfig.totalInventory) * 100 : 100;
   const photoEndPct   = photoBefore > 0 ? Math.max(0, (photoRemainingEnd / demoConfig.totalInventory) * 100) : 0;
 
-  // ── Animation refs ───────────────────────────────────────────────────────────
+  // ── Inventory score (steps 1-3) ───────────────────────────────────────────────
+  const scoreBeforeStep = SCORE_STEPS[bucketIdx];
+  const scoreAfterStep  = SCORE_STEPS[afterIdx];
+  const scoreDeltaStep  = +(scoreAfterStep - scoreBeforeStep).toFixed(1);
+  const scoreStartPct   = (scoreBeforeStep / 10) * 100;
+  const scoreEndPct     = (scoreAfterStep  / 10) * 100;
+
+  // ── Animation refs ────────────────────────────────────────────────────────────
   const ttmAfterBarRef   = useRef<HTMLDivElement>(null);
   const hcAfterBarRef    = useRef<HTMLDivElement>(null);
   const photoAfterBarRef = useRef<HTMLDivElement>(null);
+  const scoreAfterBarRef = useRef<HTMLDivElement>(null);
   const ttmDeltaRef      = useRef<HTMLDivElement>(null);
   const hcDeltaRef       = useRef<HTMLDivElement>(null);
   const photoDeltaRef    = useRef<HTMLDivElement>(null);
+  const scoreDeltaRef    = useRef<HTMLDivElement>(null);
   const box1Ref          = useRef<HTMLDivElement>(null);
   const box2Ref          = useRef<HTMLDivElement>(null);
   const box3Ref          = useRef<HTMLDivElement>(null);
 
-  // ── Entrance animation ───────────────────────────────────────────────────────
-  // Runs on mount (StepMetricsPanel mounts fresh when success state activates).
-  // Sequence:
-  //   0.00s  Before bars appear instantly (no animation — static reference)
-  //   0.15s  After bars animate from prev-step width → this-step width
-  //   0.70s  Delta badges pop in
-  //   0.80s  Metric boxes slide up
-  //   0.90s  Score odometer counts up
   useEffect(() => {
     const tl = gsap.timeline({ delay: 0.15 });
 
-    // Set After bars at previous-step start position before animating
-    if (ttmAfterBarRef.current) {
-      const start = isAging ? agingStartPct : ttmStartPct;
-      const end   = isAging ? agingEndPct   : Math.max(0, ttmEndPct);
-      gsap.set(ttmAfterBarRef.current, { width: `${start}%` });
-      tl.to(ttmAfterBarRef.current, {
-        width: `${end}%`,
-        duration: 0.8,
-        ease: "power3.out",
-      }, 0);
-    }
-
-    if (hcAfterBarRef.current) {
-      const start = isAging ? agingCostStartPct : hcStartPct;
-      const end   = isAging ? agingCostEndPct   : hcEndPct;
-      gsap.set(hcAfterBarRef.current, { width: `${start}%` });
-      tl.to(hcAfterBarRef.current, {
-        width: `${end}%`,
-        duration: 0.8,
-        ease: "power3.out",
-      }, 0.1);
-    }
-
-    if (!isAging && photoAfterBarRef.current) {
-      gsap.set(photoAfterBarRef.current, { width: `${photoStartPct}%` });
-      tl.to(photoAfterBarRef.current, {
-        width: `${photoEndPct}%`,
-        duration: 0.8,
-        ease: "power3.out",
-      }, 0.2);
-    }
-
-    // Delta badges: scale + fade pop after bars settle
-    const deltaBadgeTargets = isAging
-      ? [ttmDeltaRef.current, hcDeltaRef.current]
-      : [ttmDeltaRef.current, hcDeltaRef.current, photoDeltaRef.current];
-    tl.fromTo(
-      deltaBadgeTargets,
-      { opacity: 0, scale: 0.75, y: 4 },
-      { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
-      0.65
-    );
-
-    // Metric boxes: staggered slide up (aging step only)
     if (isAging) {
+      if (ttmAfterBarRef.current) {
+        gsap.set(ttmAfterBarRef.current, { width: `${agingStartPct}%` });
+        tl.to(ttmAfterBarRef.current, { width: `${agingEndPct}%`, duration: 0.8, ease: "power3.out" }, 0);
+      }
+      if (hcAfterBarRef.current) {
+        gsap.set(hcAfterBarRef.current, { width: `${agingCostStartPct}%` });
+        tl.to(hcAfterBarRef.current, { width: `${agingCostEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.1);
+      }
+      tl.fromTo(
+        [ttmDeltaRef.current, hcDeltaRef.current],
+        { opacity: 0, scale: 0.75, y: 4 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
+        0.65
+      );
       tl.fromTo(
         [box1Ref.current, box2Ref.current, box3Ref.current],
         { opacity: 0, y: 18 },
         { opacity: 1, y: 0, duration: 0.42, ease: "power3.out", stagger: 0.09 },
         0.78
+      );
+    } else if (isRaw) {
+      if (photoAfterBarRef.current) {
+        gsap.set(photoAfterBarRef.current, { width: `${photoStartPct}%` });
+        tl.to(photoAfterBarRef.current, { width: `${photoEndPct}%`, duration: 0.8, ease: "power3.out" }, 0);
+      }
+      if (scoreAfterBarRef.current) {
+        gsap.set(scoreAfterBarRef.current, { width: `${scoreStartPct}%` });
+        tl.to(scoreAfterBarRef.current, { width: `${scoreEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.1);
+      }
+      tl.fromTo(
+        [photoDeltaRef.current, scoreDeltaRef.current],
+        { opacity: 0, scale: 0.75, y: 4 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
+        0.65
+      );
+    } else {
+      if (ttmAfterBarRef.current) {
+        gsap.set(ttmAfterBarRef.current, { width: `${ttmStartPct}%` });
+        tl.to(ttmAfterBarRef.current, { width: `${Math.max(0, ttmEndPct)}%`, duration: 0.8, ease: "power3.out" }, 0);
+      }
+      if (hcAfterBarRef.current) {
+        gsap.set(hcAfterBarRef.current, { width: `${hcStartPct}%` });
+        tl.to(hcAfterBarRef.current, { width: `${hcEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.1);
+      }
+      if (photoAfterBarRef.current) {
+        gsap.set(photoAfterBarRef.current, { width: `${photoStartPct}%` });
+        tl.to(photoAfterBarRef.current, { width: `${photoEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.2);
+      }
+      if (scoreAfterBarRef.current) {
+        gsap.set(scoreAfterBarRef.current, { width: `${scoreStartPct}%` });
+        tl.to(scoreAfterBarRef.current, { width: `${scoreEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.3);
+      }
+      tl.fromTo(
+        [ttmDeltaRef.current, hcDeltaRef.current, photoDeltaRef.current, scoreDeltaRef.current],
+        { opacity: 0, scale: 0.75, y: 4 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
+        0.65
       );
     }
 
@@ -349,7 +352,7 @@ export function StepMetricsPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucketKey]);
 
-  // ── Render ───────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-[12px]">
       {isAging ? (
@@ -380,7 +383,6 @@ export function StepMetricsPanel({
             deltaRef={hcDeltaRef}
             afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
           />
-
           <div className="flex gap-[8px] pt-[10px]">
             <MetricBox
               ref={box1Ref}
@@ -408,40 +410,8 @@ export function StepMetricsPanel({
             />
           </div>
         </div>
-      ) : (
+      ) : isRaw ? (
         <div>
-          {/* ── Graph 1: Time to market ─────────────────────────────────────────── */}
-          <GraphSection
-            title="Time to market"
-            beforeDisplay={`${ttmBaseline}d`}
-            afterDisplay={isZeroTTM ? "0d" : `${ttmAfter}d`}
-            deltaDisplay={`-${ttmDelta}d`}
-            deltaColor={accent}
-            deltaBg={`${accent}20`}
-            startPct={ttmStartPct}
-            endPct={ttmEndPct}
-            afterBarRef={ttmAfterBarRef}
-            deltaRef={ttmDeltaRef}
-            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
-            isZeroAfter={isZeroTTM}
-          />
-
-          {/* ── Graph 2: Gross margin at risk ──────────────────────────────────── */}
-          <GraphSection
-            title="Gross margin at risk"
-            beforeDisplay={fmtK(hcBaseline)}
-            afterDisplay={fmtK(hcAfter)}
-            deltaDisplay={`+${fmtK(hcDelta)} recovered`}
-            deltaColor="#059669"
-            deltaBg="#D1FAE5"
-            startPct={hcStartPct}
-            endPct={hcEndPct}
-            afterBarRef={hcAfterBarRef}
-            deltaRef={hcDeltaRef}
-            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
-          />
-
-          {/* ── Graph 3: Photography cost ───────────────────────────────────────── */}
           <GraphSection
             title="Photography cost"
             beforeDisplay={fmtK(photoBefore)}
@@ -456,6 +426,77 @@ export function StepMetricsPanel({
             afterBarGradient="linear-gradient(90deg, #0891B2 0%, #0E7490 100%)"
             isZeroAfter={isZeroPhoto}
             zeroLabel="Eliminated"
+          />
+          <GraphSection
+            title="Inventory score"
+            beforeDisplay={`${scoreBeforeStep.toFixed(1)}/10`}
+            afterDisplay={`${scoreAfterStep.toFixed(1)}/10`}
+            deltaDisplay={`+${scoreDeltaStep} pts`}
+            deltaColor={accent}
+            deltaBg={`${accent}20`}
+            startPct={scoreStartPct}
+            endPct={scoreEndPct}
+            afterBarRef={scoreAfterBarRef}
+            deltaRef={scoreDeltaRef}
+            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
+          />
+        </div>
+      ) : (
+        <div>
+          <GraphSection
+            title="Time to market"
+            beforeDisplay={`${ttmBaseline}d`}
+            afterDisplay={isZeroTTM ? "0d" : `${ttmAfter}d`}
+            deltaDisplay={`-${ttmDelta}d`}
+            deltaColor={accent}
+            deltaBg={`${accent}20`}
+            startPct={ttmStartPct}
+            endPct={ttmEndPct}
+            afterBarRef={ttmAfterBarRef}
+            deltaRef={ttmDeltaRef}
+            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
+            isZeroAfter={isZeroTTM}
+          />
+          <GraphSection
+            title="Gross margin at risk"
+            beforeDisplay={fmtK(hcBaseline)}
+            afterDisplay={fmtK(hcAfter)}
+            deltaDisplay={`+${fmtK(hcDelta)} recovered`}
+            deltaColor="#059669"
+            deltaBg="#D1FAE5"
+            startPct={hcStartPct}
+            endPct={hcEndPct}
+            afterBarRef={hcAfterBarRef}
+            deltaRef={hcDeltaRef}
+            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
+          />
+          <GraphSection
+            title="Photography cost"
+            beforeDisplay={fmtK(photoBefore)}
+            afterDisplay={isZeroPhoto ? "$0" : fmtK(photoAfterCost)}
+            deltaDisplay={`+${fmtK(photoDeltaCost)} saved`}
+            deltaColor="#0891B2"
+            deltaBg="#E0F2FE"
+            startPct={photoStartPct}
+            endPct={photoEndPct}
+            afterBarRef={photoAfterBarRef}
+            deltaRef={photoDeltaRef}
+            afterBarGradient="linear-gradient(90deg, #0891B2 0%, #0E7490 100%)"
+            isZeroAfter={isZeroPhoto}
+            zeroLabel="Eliminated"
+          />
+          <GraphSection
+            title="Inventory score"
+            beforeDisplay={`${scoreBeforeStep.toFixed(1)}/10`}
+            afterDisplay={`${scoreAfterStep.toFixed(1)}/10`}
+            deltaDisplay={`+${scoreDeltaStep} pts`}
+            deltaColor={accent}
+            deltaBg={`${accent}20`}
+            startPct={scoreStartPct}
+            endPct={scoreEndPct}
+            afterBarRef={scoreAfterBarRef}
+            deltaRef={scoreDeltaRef}
+            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
           />
         </div>
       )}
