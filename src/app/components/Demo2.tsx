@@ -735,15 +735,15 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   },
   cgi: {
     accent: "#7C3AED",
-    step: "Step 03 · Studio AI · Stock Photos",
-    product: "Smart Shoot",
-    punchline: "Make your VDPs look premium",
-    tagline: "Studio grade imagery at inventory scale",
+    step: "Step 03 · Studio AI · Smart Match",
+    product: "SmartMatch",
+    punchline: "Real images. Consistent listings.",
+    tagline: "SmartMatch finds VIN-matched real vehicle assets so every listing goes live with authentic, consistent images across VDP and VLP.",
     problem:
       "Stock images on your VDPs are hurting your dealership brand. Inconsistent backgrounds, watermarks, and non-standard crops across listings reduce buyer trust and suppress VDP clicks.",
     problemChips: [
       "Inconsistent VDPs",
-      "Watermarked Images",
+      "OEM Stock Images",
       "Low Marketplace CTR",
     ],
     solutionSection: {
@@ -751,26 +751,26 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       boxes: [
         {
           icon: <Layers size={14} strokeWidth={2} />,
-          label: "Consistent VDPs",
-          body: "Delivers uniform angles, clean backgrounds and studio-grade quality across every VDP",
+          label: "Real VIN-Matched Assets",
+          body: "Searches for real vehicle images matched by VIN, replacing stock photos with authentic car assets",
         },
         {
           icon: <Globe size={14} strokeWidth={2} />,
-          label: "Increased Competitiveness",
-          body: "Outperforms stock photos on every marketplace, driving higher CTR and engagement",
+          label: "Consistent VDP and VLP",
+          body: "Ensures your vehicle detail and listing pages show the same real images, building buyer confidence",
         },
         {
           icon: <Sparkles size={14} strokeWidth={2} />,
           label: "Higher Buyer Trust",
-          body: "Consistent premium imagery builds credibility and keeps shoppers on your listing longer",
+          body: "Real car photos outperform stock images, keeping shoppers engaged and driving more VDP clicks",
         },
       ],
     },
     bullets: [
-      "Import inventory",
-      "Smart Match or Smart Shoot",
-      "Studio grade assets ready",
-      "Push live to all platforms",
+      "Stock photo detected",
+      "SmartMatch searches by VIN",
+      "Real vehicle assets found",
+      "Go live with real images",
     ],
     bulletStyle: "nodes",
     heroNode: <StockPhotoGridHero />,
@@ -780,20 +780,20 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       before: <img src={imgCgiFront} alt="Standard processed front" className="w-full h-full object-cover" />,
       after:  <img src={imgCgiTransformed} alt="CGI-grade front" className="w-full h-full object-cover" />,
     },
-    actionLabel: "Upgrade all 134 to CGI",
+    actionLabel: "Replace stock photos",
   },
   unsyndicated: {
     accent: "#4600F2",
     step: "Step 04 · Studio AI · Syndication",
     product: "Syndication",
     punchline: "Every channel, one click.",
-    tagline: "Push every studio-grade listing to the marketplaces buyers actually use, instantly.",
+    tagline: "One action publishes your studio-grade inventory to every marketplace, auto-formatted and ready to go live at any scale.",
     problem:
       "Your vehicles are listing-ready but visibility stops at your website. Buyers searching AutoTrader, Cars.com, and KBB never see them. Every day a car sits off-marketplace is another day holding cost compounds with zero buyer reach.",
     problemChips: [
       "Zero Off-Site Visibility",
       "Manual Publishing",
-      "Slow Time to Live",
+      "Vendor Bottlenecks",
     ],
     solutionSection: {
       title: "The Solution",
@@ -805,13 +805,13 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         },
         {
           icon: <Wand2 size={14} strokeWidth={2} />,
-          label: "Marketplace Formatting",
-          body: "Formats each listing to match the aspect ratios, specs and character limits of every platform",
+          label: "Multi-Format Automation",
+          body: "Auto-generates marketplace-ready aspect ratios, specs and character limits for every platform",
         },
         {
           icon: <Send size={14} strokeWidth={2} />,
-          label: "Safe Publish Tracking",
-          body: "Confirms every listing published successfully with status synced back to your IMS",
+          label: "Unlimited Throughput",
+          body: "No vendor or team capacity limits — publish your entire inventory in one action at any scale",
         },
       ],
     },
@@ -823,7 +823,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     ],
     bulletStyle: "nodes",
     heroNode: <SyndicationHero />,
-    actionLabel: "Syndicate all 156",
+    actionLabel: "Publish all 156",
   },
   aging: {
     accent: "#DC2626",
