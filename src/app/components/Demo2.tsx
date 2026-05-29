@@ -651,7 +651,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "Raw lot photos have mixed backgrounds, patchy lighting, and no 360 or video. Buyers scroll past listings that look like they were shot in a hurry.",
     problemChips: [
       "Photography Costs",
-      "Slow TTM",
+      "Low Converting Media",
       "Inconsistent VDPs",
     ],
     solutionSection: {
@@ -664,8 +664,8 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         },
         {
           icon: <Monitor size={14} strokeWidth={2} />,
-          label: "Instant Listing Creation",
-          body: "Creates studio-quality listings without physical setup or editing",
+          label: "Interactive VDPs",
+          body: "Creates studio-quality visuals that drive higher VDP engagement",
         },
         {
           icon: <Palette size={14} strokeWidth={2} />,
