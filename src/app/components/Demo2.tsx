@@ -689,31 +689,31 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     step: "Step 02 · Studio AI · Smart Match",
     product: "SmartMatch",
     punchline: "Capture demand from Day 0",
-    tagline: "Be visible while competitors wait for the shoot",
+    tagline: "Publish studio-grade listings the moment you acquire a vehicle, before it even arrives on lot.",
     problem:
       "The vehicle is acquired but the shoot is pending or it has not hit your lot yet. Every day your listing sits dark, buyers are clicking the competition while holding cost eats at your margin.",
     problemChips: [
-      "Dark Listings",
-      "Slow Go-Live",
-      "Photography Costs",
+      "Pre-Arrival Gap",
+      "Shoot Delays",
+      "Repetitive Merch Costs",
     ],
     solutionSection: {
       title: "The Solution",
       boxes: [
         {
           icon: <Search size={14} strokeWidth={2} />,
-          label: "Smart VIN Matching",
+          label: "Smart VIN Match",
           body: "Matches on year, make, model, trim and color, cloning assets automatically",
         },
         {
           icon: <Rocket size={14} strokeWidth={2} />,
-          label: "Go Live Instantly",
+          label: "Instant TTM",
           body: "Publishes your listing in seconds, capturing demand from the moment a car arrives",
         },
         {
           icon: <Building2 size={14} strokeWidth={2} />,
-          label: "Reuse Across Rooftops",
-          body: "One set of assets deployed instantly across every rooftop in your dealer group",
+          label: "Group Asset Library",
+          body: "Assets shot once are instantly available across every rooftop in your dealer group",
         },
       ],
     },
@@ -731,7 +731,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       { icon: <Search size={16} strokeWidth={2.2} />,   title: "Spec Matching",   tagline: "Year, make, model, trim, color.",       accent: "#E91E63" },
     ],
     featuresPhase: "success",
-    actionLabel: "Match all eligible",
+    actionLabel: "Run SmartMatch",
   },
   cgi: {
     accent: "#7C3AED",
