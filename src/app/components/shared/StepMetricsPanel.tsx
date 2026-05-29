@@ -60,6 +60,10 @@ interface GraphSectionProps {
   afterBarGradient: string;
   isZeroAfter?: boolean;
   zeroLabel?: string;
+  /** When set, the before bar renders at this width instead of 100%.
+   *  Use for metrics that increase (e.g. inventory score) so the
+   *  after bar visually appears longer/better than the before bar. */
+  beforePct?: number;
 }
 
 function GraphSection({
@@ -76,6 +80,7 @@ function GraphSection({
   afterBarGradient,
   isZeroAfter,
   zeroLabel = "Instant",
+  beforePct,
 }: GraphSectionProps) {
   return (
     <div className="mb-[20px]">
@@ -95,12 +100,15 @@ function GraphSection({
 
       {/* Before bar */}
       <div className="flex items-center gap-[10px] mb-[6px]">
-        <div className="flex-1 h-[20px] rounded-[6px] relative overflow-hidden">
+        <div className="flex-1 h-[20px] rounded-[6px] relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
           <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(90deg, rgba(244,63,94,0.28) 0%, rgba(244,63,94,0.12) 100%)" }}
+            className="absolute inset-y-0 left-0 rounded-[6px]"
+            style={{
+              width: beforePct !== undefined ? `${beforePct}%` : "100%",
+              background: "linear-gradient(90deg, rgba(244,63,94,0.28) 0%, rgba(244,63,94,0.12) 100%)",
+            }}
           />
-          <span className="absolute left-[10px] inset-y-0 flex items-center text-[8.5px] font-semibold uppercase tracking-[0.8px] text-black/35 font-['Inter',sans-serif] select-none">
+          <span className="absolute left-[10px] inset-y-0 flex items-center text-[8.5px] font-semibold uppercase tracking-[0.8px] text-black/35 font-['Inter',sans-serif] select-none z-[1]">
             Before
           </span>
         </div>
@@ -206,17 +214,22 @@ export function StepMetricsPanel({
   const isRaw   = bucketKey === "raw";
 
   // ── Step 5 (aging) values ────────────────────────────────────────────────────
-  const agingTargetUnits = useMemo(() => Math.round(demoConfig.totalInventory * 0.10), [demoConfig.totalInventory]);
-  const agingUnitsBefore = opp.agedVehicles;
-  const agingUnitsAfter  = agingTargetUnits;
-  const agingUnitsDelta  = agingUnitsBefore - agingUnitsAfter;
+  // DOL benchmarks — sourced from Lotlinx case data (38→22d, 42→16d range).
+  // Conservative mid used: 45d → 28d (~38% faster sell-through).
+  // Docs: METRICS_AND_DEALER_INPUTS.md §5 Step 5.
+  const AGED_DOL_BEFORE = 45;
+  const AGED_DOL_AFTER  = 28;
+  const agingDOLDelta   = AGED_DOL_BEFORE - AGED_DOL_AFTER; // 17 days
 
+  const agingDOLStartPct = 100;
+  const agingDOLEndPct   = Math.max(4, (AGED_DOL_AFTER / AGED_DOL_BEFORE) * 100); // ≈ 62
+
+  // Margin at risk — uses DOL ratio instead of unit-count ratio.
+  // Grounds the financial recovery in the sell-through speed data.
   const agingCostBefore = opp.agedMonthly;
-  const agingCostAfter = Math.round(agingCostBefore * (10 / 15));
-  const agingCostDelta = agingCostBefore - agingCostAfter;
+  const agingCostAfter  = Math.round(agingCostBefore * (AGED_DOL_AFTER / AGED_DOL_BEFORE));
+  const agingCostDelta  = agingCostBefore - agingCostAfter;
 
-  const agingStartPct = agingUnitsBefore > 0 ? 100 : 0;
-  const agingEndPct   = agingUnitsBefore > 0 ? Math.max(4, (agingUnitsAfter / agingUnitsBefore) * 100) : 4;
   const agingCostStartPct = agingCostBefore > 0 ? 100 : 0;
   const agingCostEndPct   = agingCostBefore > 0 ? Math.max(4, (agingCostAfter / agingCostBefore) * 100) : 4;
 
@@ -289,8 +302,8 @@ export function StepMetricsPanel({
 
     if (isAging) {
       if (ttmAfterBarRef.current) {
-        gsap.set(ttmAfterBarRef.current, { width: `${agingStartPct}%` });
-        tl.to(ttmAfterBarRef.current, { width: `${agingEndPct}%`, duration: 0.8, ease: "power3.out" }, 0);
+        gsap.set(ttmAfterBarRef.current, { width: `${agingDOLStartPct}%` });
+        tl.to(ttmAfterBarRef.current, { width: `${agingDOLEndPct}%`, duration: 0.8, ease: "power3.out" }, 0);
       }
       if (hcAfterBarRef.current) {
         gsap.set(hcAfterBarRef.current, { width: `${agingCostStartPct}%` });
@@ -358,20 +371,20 @@ export function StepMetricsPanel({
       {isAging ? (
         <div>
           <GraphSection
-            title="Aged units (45+ days)"
-            beforeDisplay={`${agingUnitsBefore}`}
-            afterDisplay={`${agingUnitsAfter}`}
-            deltaDisplay={`-${agingUnitsDelta} units`}
+            title="Avg. days on lot — aged units"
+            beforeDisplay={`${AGED_DOL_BEFORE}d`}
+            afterDisplay={`${AGED_DOL_AFTER}d`}
+            deltaDisplay={`-${agingDOLDelta}d per unit`}
             deltaColor="#EF4444"
             deltaBg="#FEE2E2"
-            startPct={agingStartPct}
-            endPct={agingEndPct}
+            startPct={agingDOLStartPct}
+            endPct={agingDOLEndPct}
             afterBarRef={ttmAfterBarRef}
             deltaRef={ttmDeltaRef}
-            afterBarGradient="linear-gradient(90deg, #EF4444 0%, #F97316 100%)"
+            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
           />
           <GraphSection
-            title="Aged holding cost · monthly"
+            title="Margin at risk · monthly"
             beforeDisplay={fmtK(agingCostBefore)}
             afterDisplay={fmtK(agingCostAfter)}
             deltaDisplay={`+${fmtK(agingCostDelta)} recovered`}
@@ -387,17 +400,17 @@ export function StepMetricsPanel({
             <MetricBox
               ref={box1Ref}
               icon={<Zap size={13} strokeWidth={2.5} />}
-              label="Aged vehicles targeted"
-              delta={`${agingUnitsBefore}`}
-              sub={`Target: ${agingUnitsAfter} (10% of lot)`}
+              label="VDP views on aged listings"
+              delta="+40%"
+              sub="campaign visual treatment"
               accent="#EF4444"
             />
             <MetricBox
               ref={box2Ref}
               icon={<DollarSign size={13} strokeWidth={2.5} />}
-              label="Aged HC recovered"
+              label="Margin recovered"
               delta={`+${fmtK(agingCostDelta)}`}
-              sub="estimated with campaigns"
+              sub="vs. no campaign"
               accent="#10B981"
             />
             <MetricBox
@@ -436,6 +449,7 @@ export function StepMetricsPanel({
             deltaBg={`${accent}20`}
             startPct={scoreStartPct}
             endPct={scoreEndPct}
+            beforePct={scoreStartPct}
             afterBarRef={scoreAfterBarRef}
             deltaRef={scoreDeltaRef}
             afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
@@ -494,6 +508,7 @@ export function StepMetricsPanel({
             deltaBg={`${accent}20`}
             startPct={scoreStartPct}
             endPct={scoreEndPct}
+            beforePct={scoreStartPct}
             afterBarRef={scoreAfterBarRef}
             deltaRef={scoreDeltaRef}
             afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}

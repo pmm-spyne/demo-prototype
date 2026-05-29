@@ -144,6 +144,67 @@ export interface PitchPanelProps extends PitchContent {
 
 const MAGENTA_GRAD = "linear-gradient(90deg, #FF5C9A 0%, #B651D7 100%)";
 
+// ── Step progress bar ─────────────────────────────────────────────────────────
+const STEP_BUCKET_ORDER = ["raw", "nophoto", "cgi", "unsyndicated", "aging"] as const;
+
+function StepProgressBar({
+  currentStepIndex,
+  completedStepsCount,
+  isCurrentCompleted,
+}: {
+  currentStepIndex: number;
+  completedStepsCount: number;
+  isCurrentCompleted: boolean;
+}) {
+  const total = STEP_BUCKET_ORDER.length;
+
+  const nodeState = (i: number): "done" | "active" | "inactive" => {
+    if (i < completedStepsCount || (i === currentStepIndex && isCurrentCompleted)) return "done";
+    if (i === currentStepIndex) return "active";
+    return "inactive";
+  };
+
+  return (
+    <div className="flex items-center mb-[14px]">
+      {STEP_BUCKET_ORDER.map((_, i) => {
+        const state = nodeState(i);
+        const isLast = i === total - 1;
+        const lineActive = state === "done";
+
+        return (
+          <div key={i} className={`flex items-center ${isLast ? "" : "flex-1"}`}>
+            {/* Node */}
+            <div
+              className="size-[20px] rounded-full flex items-center justify-center shrink-0"
+              style={
+                state === "done"
+                  ? { background: "#056E3D" }
+                  : state === "active"
+                  ? { background: "white", border: "2.5px solid #1D4ED8" }
+                  : { background: "#93B8EE" }
+              }
+            >
+              {state === "done" && (
+                <Check size={10} strokeWidth={3.5} color="white" />
+              )}
+              {state === "active" && (
+                <div className="size-[7px] rounded-full" style={{ background: "#1D4ED8" }} />
+              )}
+            </div>
+            {/* Connector line */}
+            {!isLast && (
+              <div
+                className="h-[2px] flex-1"
+                style={{ background: lineActive ? "#1D4ED8" : "#93B8EE" }}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function PitchPanel(props: PitchPanelProps) {
   const {
     open, onClose, onAction, actionRunning, completed,
@@ -244,6 +305,14 @@ export function PitchPanel(props: PitchPanelProps) {
         <div className="px-[28px] pt-[24px] pb-[18px] border-b border-black/8">
           <div className="flex items-start justify-between gap-[12px]">
             <div className="flex-1 min-w-0">
+              {/* Step progress bar — shown whenever this pitch represents a known step */}
+              {metricsStep && STEP_BUCKET_ORDER.includes(metricsStep as typeof STEP_BUCKET_ORDER[number]) && (
+                <StepProgressBar
+                  currentStepIndex={STEP_BUCKET_ORDER.indexOf(metricsStep as typeof STEP_BUCKET_ORDER[number])}
+                  completedStepsCount={completedSteps ?? 0}
+                  isCurrentCompleted={Boolean(success)}
+                />
+              )}
               <div className="flex items-center gap-[8px]">
                 <span className="size-[8px] rounded-full" style={{ backgroundColor: accent }} />
                 <p
@@ -269,9 +338,11 @@ export function PitchPanel(props: PitchPanelProps) {
                   {punchline}
                 </h2>
               )}
-              <p className="mt-[6px] text-[13px] text-black/60 font-['Inter:Regular',sans-serif] leading-snug">
-                {tagline}
-              </p>
+              {!success && (
+                <p className="mt-[6px] text-[13px] text-black/60 font-['Inter:Regular',sans-serif] leading-snug">
+                  {tagline}
+                </p>
+              )}
             </div>
             <button
               type="button"

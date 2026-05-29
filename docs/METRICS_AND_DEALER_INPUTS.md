@@ -394,10 +394,7 @@ in the box sub-label as `X.X → Y.Y`.
 
 ---
 
-## 5. Metrics for Steps 4 and 5 (Not Yet Built)
-
-`StepMetricsPanel` returns `null` for `bucketIdx > 2`. Steps 4-5 use different graph
-types because the problem being solved is different.
+## 5. Metrics for Steps 4 and 5
 
 ### Step 4 — Syndication (`unsyndicated`)
 
@@ -421,25 +418,112 @@ TTM does not change at this step. Graph 1 switches from TTM to publishing reach.
 | 2 | `X listings` | Now live across all channels |
 | 3 | `+X.X pts` | Listing quality (score odometer) |
 
+---
+
 ### Step 5 — Smart Campaigns (`aging`)
 
-**Graph 1 — Aged units (45+ days)**
-- Before: `agedVehicles` = `round(totalInventory × 15%)` from `calcOpportunity()`
-- After: target `round(totalInventory × 10%)`
-- Delta: `-X units`
+> **Implementation file:** `src/app/components/shared/StepMetricsPanel.tsx` — `isAging` branch.
 
-**Graph 2 — Aged inventory holding cost**
-- Before: `agedMonthly` from `calcOpportunity()`
-- After: reduced by campaign-driven sales estimate
-- Delta: `+$XK recovered`
+#### Industry research basis
 
-**3 metric boxes:**
+The Step 5 metrics are grounded in the following published sources. Do not use Spyne
+internal claims for these benchmarks.
 
-| Box | Delta | Label |
+**VDP engagement uplift from visual campaign treatment:**
+- AutoTrader marketplace data: listings with a "Good Deal" badge get **+31% more leads per VDP**;
+  "Great Deal" badge gets **+60% more leads**. Source: Trader.ca merchandising whitepaper.
+- CarGurus: top-quartile photo/visual quality listings receive **+40% more VDP views**.
+  Source: CarpixAI citing CarGurus internal data (2024).
+- Cox Automotive: used-car listings with real photos are **40% more likely to generate leads** vs.
+  stock/no-photo. Source: xciteauto.com citing Cox Automotive (2024).
+- Demo uses **+40% VDP views** as the conservative, multi-source supported figure.
+
+**Sell-through speed reduction for promoted aged units:**
+- Lotlinx / McCarthy Auto Group (12 rooftops, Kansas City): average DOL for units in a VIN-targeted
+  campaign dropped from **42 days → 16 days** (62% reduction). Source: lotlinx.com/mccarthy.
+- Lotlinx / Fayetteville Dodge Ram: average DOL from **38 days → 22 days** (42% reduction).
+  Source: willowoodventures.com Lotlinx case study.
+- Lotlinx OEM study (Dec 2023): **51% of units with 60+ DOL were sold** through a VIN-targeted
+  campaign; 87% of traffic was net-new to dealer site. Source: lotlinx.com/oem-aging-inventory.
+- Demo uses **45 days → 28 days** (38% reduction) — a conservative midpoint of the Lotlinx range
+  that avoids the headline McCarthy result while remaining defensible.
+
+**Holding cost and margin erosion benchmarks:**
+- NADA 2025 Dealership Financial Profile: **$32–$48/day** per vehicle (floorplan + insurance +
+  lot + depreciation). Source: NADA/US Tech Automations citing NADA 2025.
+- WardsAuto / Colonnade Advisors (2024): **$40/day new, $85/day used**. Average turn time
+  now 50.2 days, up 23% from 2023. Source: wardsauto.com.
+- AutoAuctionAtlas: average used-car front gross **$1,668/unit in Q2 2025**, margin compressed
+  to 5.4% (from 7.3% in 2019). After 46-60 DOL, **22-30% of front gross is eroded** by holding
+  costs alone. Source: autoauctionatlas.com / NADA 2025 benchmark table.
+- Demo default of **$46/day** sits at the NADA midpoint and is intentionally conservative.
+
+#### Graph 1 — Average days on lot, aged units
+
+This is the **mechanism graph** — it shows campaigns directly accelerating sell-through.
+
+| | Value | Notes |
 |---|---|---|
-| 1 | `X units` | Aged vehicles targeted |
-| 2 | `+$X.XK` | Aged inventory HC recovered |
-| 3 | `+X.X pts` | Listing quality (score odometer) |
+| Before | `45` days | Fixed constant. 45-day floor is the threshold at which the aging cohort is defined. |
+| After | `28` days | Campaign target. Sourced from Lotlinx case data (38→22d avg, conservative mid). |
+| Delta | `-17d per unit` | Displayed as `-17d` |
+| Bar — Before | 100% width | Static reference (red gradient) |
+| Bar — After | `(28 / 45) × 100` ≈ 62% | Green gradient, animates from 100% → 62% on mount |
+
+```
+AGED_DOL_BEFORE = 45   // constant
+AGED_DOL_AFTER  = 28   // constant
+agingDOLStartPct = 100
+agingDOLEndPct   = Math.max(4, (AGED_DOL_AFTER / AGED_DOL_BEFORE) * 100)  // ≈ 62
+```
+
+#### Graph 2 — Margin at risk · monthly
+
+This is the **financial outcome graph**. It is labelled "Margin at risk" (not "Holding cost")
+because it captures both the direct holding cost savings AND the avoided markdown risk.
+
+```
+agingCostBefore  = agedVehicles × holdingCostPerDay × 30       (from calcOpportunity — unchanged)
+agingCostAfter   = round(agingCostBefore × (28 / 45))          (DOL-ratio formula — replaces 10/15)
+agingCostDelta   = agingCostBefore - agingCostAfter
+```
+
+At demo defaults ($46/day, 200 units → 30 aged vehicles):
+- Before: 30 × $46 × 30 = **$41,400**
+- After: $41,400 × (28/45) = **$25,760**
+- Recovered: **$15,640**
+
+This is stronger than the old `(10/15)` ratio which only recovered $13,800 and was based on
+unit-count reduction rather than the campaign-driven DOL data.
+
+| | Value |
+|---|---|
+| Bar — Before | 100% width (static) |
+| Bar — After | `(agingCostAfter / agingCostBefore) × 100` ≈ 62% |
+| Delta badge | `+$XK recovered` (green) |
+
+#### 3 Metric boxes
+
+| Box | Icon | Delta | Label | Sub-label | Source |
+|---|---|---|---|---|---|
+| 1 | Zap | `+40%` | VDP views on aged listings | `campaign visual treatment` | CarGurus / AutoTrader badge data |
+| 2 | DollarSign | `+$XK` | Margin recovered | `vs. no campaign` | DOL-ratio formula above |
+| 3 | Activity | `X.X` (score) | Listing quality | `+0.7 pts · 0-10` | SCORE_STEPS[4→5] |
+
+Box 1 is the **"why it works"** box. It links the campaign mechanism to the financial outcome.
+Without it, the HC recovery appears as a black-box number. With it the AE can narrate:
+"Campaigns push 40% more shoppers onto your aged VDPs → they sell 17 days faster → you recover $X."
+
+#### Success banner (PitchPanel — `aging` bucket)
+
+| Field | Value |
+|---|---|
+| `title` | `"X aged units. Campaigns active."` (X = BUCKET_TOTALS.aging) |
+| `subtitle` | `"Smart Campaigns applied visual promotions across your 45-day inventory. Targeted shoppers are now seeing your cars."` |
+| Chip 1 | `delta: X units` / `label: "Units promoted"` |
+| Chip 2 | `delta: "+40%"` / `label: "VDP views uplift"` |
+| Chip 3 | `delta: "-17d"` / `label: "Avg. days on lot"` |
+| Chip 4 | `delta: "+$X"` / `label: "Margin recovered"` (from holdingCostSavedAtStep) |
 
 ---
 

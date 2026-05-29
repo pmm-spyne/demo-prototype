@@ -865,7 +865,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       { icon: <Timer size={16} strokeWidth={2.2} />,     title: "Holding-Cost ROI",   tagline: "$/day math on every campaign run.", accent: "#F59E0B" },
       { icon: <Building2 size={16} strokeWidth={2.2} />, title: "Group-Wide",         tagline: "Roll the same campaign across lots.", accent: "#4600F2" },
     ],
-    featuresPhase: "success",
+    featuresPhase: "pitch",
     actionLabel: "Launch campaigns",
   },
 };
@@ -1385,6 +1385,16 @@ export function Demo2({ demoConfig }: Demo2Props) {
               { delta: `+${(SCORE_BY_STEP[bucketStep] - SCORE_BY_STEP[bucketStep - 1]).toFixed(1)}`,
                                                                             label: "Inventory score"      },
               { delta: `+$${savedDollars.toLocaleString()}`,               label: "Holding cost saved"   },
+            ],
+          } : {}),
+          ...(activeBucket === "aging" ? {
+            title:    `${BUCKET_TOTALS.aging} aged units. Campaigns active.`,
+            subtitle: "Smart Campaigns applied visual promotions across your 45-day inventory. Targeted shoppers are now seeing your cars.",
+            chips: [
+              { delta: `${BUCKET_TOTALS.aging}`,                            label: "Units promoted"       },
+              { delta: "+40%",                                               label: "VDP views uplift"     },
+              { delta: "-17d",                                               label: "Avg. days on lot"     },
+              { delta: `+$${savedDollars.toLocaleString()}`,               label: "Margin recovered"     },
             ],
           } : {}),
         } : undefined;
