@@ -830,12 +830,12 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     step: "Step 05 · Studio AI · Smart Campaigns",
     product: "Smart Campaigns",
     punchline: "Right offer. Right car. Right time.",
-    tagline: "Run visual promotions across your entire inventory automatically. No briefing cycle, no manual updates.",
+    tagline: "Run visual promotions like an expert marketing team would, automatically across every listing in your inventory.",
     problem:
       "Dealership campaigns are fragmented, manual, and easy to miss. Promotions expire unnoticed, aged inventory looks identical to fresh arrivals, and every deal becomes a price negotiation when your value goes unseen.",
     problemChips: [
+      "Manual Promotions",
       "Aged Inventory Invisible",
-      "Manual Campaign Setup",
       "Competing on Price Alone",
     ],
     solutionSection: {
@@ -844,7 +844,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Sparkles size={14} strokeWidth={2} />,
           label: "Automated Visual Promotions",
-          body: "Applies overlays, banners and dynamic text across your full inventory without any manual input",
+          body: "Applies overlays, billboards and dynamic text across your full inventory without any manual input",
         },
         {
           icon: <Timer size={14} strokeWidth={2} />,
@@ -853,8 +853,8 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         },
         {
           icon: <Building2 size={14} strokeWidth={2} />,
-          label: "Multi-Rooftop Campaigns",
-          body: "Rolls out one campaign across all locations, keeping every listing on-brand",
+          label: "Dynamic Offer Overlays",
+          body: "Showcases financing, highlights and vehicle specs on every listing so buyers see your value before they see the price",
         },
       ],
     },
