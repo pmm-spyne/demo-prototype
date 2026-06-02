@@ -1,28 +1,11 @@
-import { forwardRef, useEffect, useMemo, useRef } from "react";
+import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import { DollarSign, Activity, Zap } from "lucide-react";
 import { calcOpportunity, type DemoConfig } from "../../types/demoConfig";
-
-// Light green palette used for metric boxes
-const METRIC_BOX_BG = "#ECFDF5";
 
 // ── Constants (mirrored from Demo2.tsx — keep in sync) ───────────────────────
 const SCORE_STEPS = [4.2, 5.3, 6.4, 7.5, 8.4, 9.1];
 const HC_STEPS    = [52_500, 48_200, 43_600, 37_300, 27_900, 10_000];
 const DTF_STEPS   = [14, 12, 10, 8, 6, 5];
-
-// VINs processed by each non-aging step (proportional to 200-unit seed inventory)
-// raw=89, nophoto=23, cgi=134 (from BUCKET_TOTALS in Demo2.tsx)
-const PHOTO_VINS_PER_STEP = [89, 23, 134];
-
-// Step-specific TTM "after" targets (see docs/METRICS_AND_DEALER_INPUTS.md §4.3)
-// nophoto: 0d — SmartMatch is instant, no photographer visit needed
-// cgi:     1d — CGI processing SLA
-// raw:     no override — use dealer-scaled fleet avg (dtf[afterIdx])
-const TTM_AFTER_OVERRIDE: Partial<Record<StepBucketKey, number>> = {
-  nophoto: 0,
-  cgi: 1,
-};
 
 export type StepBucketKey = "raw" | "nophoto" | "cgi" | "unsyndicated" | "aging";
 const BUCKET_ORDER: StepBucketKey[] = ["raw", "nophoto", "cgi", "unsyndicated", "aging"];
@@ -45,145 +28,148 @@ function fmtK(v: number): string {
   return v >= 1_000 ? `$${(v / 1_000).toFixed(1)}K` : `$${v.toLocaleString()}`;
 }
 
-// ── GraphSection ──────────────────────────────────────────────────────────────
-interface GraphSectionProps {
-  title: string;
-  beforeDisplay: string;
-  afterDisplay: string;
+// ── Impact bullets: B1 = number (proof), B2 = mechanism, B3 = dealer outcome ─
+const STEP_BULLETS: Record<StepBucketKey, [string, string, string]> = {
+  raw: [
+    "Dealers on Studio AI report 46%+ more leads per listing",
+    "Studio photos rank higher in portal search results",
+    "Better photos shorten time from first view to first inquiry",
+  ],
+  nophoto: [
+    "Each offline unit costs $200-$300/week in missed leads",
+    "No photographer visit means no scheduling delay or gaps",
+    "Vehicles live before they arrive on lot capture demand from day one",
+  ],
+  cgi: [
+    "Stock photos suppress CTR on every portal that renders them",
+    "Consistent branded visuals build recognition across all your VDPs",
+    "Real images outperform OEM stock in buyer trust and time on page",
+  ],
+  unsyndicated: [
+    "Buyers on AutoTrader, Cars.com, and KBB never see unlisted inventory",
+    "Each additional portal multiplies impressions with no extra ad spend",
+    "Multi-platform reach reduces dependence on any single traffic source",
+  ],
+  aging: [
+    "By day 45, a unit has already burned 59% of its average front gross",
+    "Campaign treatment re-enters promoted units higher in portal search",
+    "Every 10 days saved at $46/day protects $460 in gross per unit",
+  ],
+};
+
+// ── BeforeAfterBlock ──────────────────────────────────────────────────────────
+interface BeforeAfterBlockProps {
+  label: string;
+  beforeVal: string;
+  afterVal: string;
   deltaDisplay: string;
   deltaColor: string;
   deltaBg: string;
-  startPct: number;
-  endPct: number;
-  afterBarRef: React.RefObject<HTMLDivElement | null>;
-  deltaRef: React.RefObject<HTMLDivElement | null>;
-  afterBarGradient: string;
-  isZeroAfter?: boolean;
-  zeroLabel?: string;
-  /** When set, the before bar renders at this width instead of 100%.
-   *  Use for metrics that increase (e.g. inventory score) so the
-   *  after bar visually appears longer/better than the before bar. */
-  beforePct?: number;
+  blockRef: React.RefObject<HTMLDivElement | null>;
 }
 
-function GraphSection({
-  title,
-  beforeDisplay,
-  afterDisplay,
+function BeforeAfterBlock({
+  label,
+  beforeVal,
+  afterVal,
   deltaDisplay,
   deltaColor,
   deltaBg,
-  startPct,
-  endPct: _endPct,
-  afterBarRef,
-  deltaRef,
-  afterBarGradient,
-  isZeroAfter,
-  zeroLabel = "Instant",
-  beforePct,
-}: GraphSectionProps) {
+  blockRef,
+}: BeforeAfterBlockProps) {
   return (
-    <div className="mb-[20px]">
-      {/* Title + animated delta badge */}
-      <div className="flex items-center justify-between mb-[10px]">
-        <p className="text-[11px] font-semibold uppercase tracking-[1.2px] text-black/50 font-['Inter',sans-serif]">
-          {title}
-        </p>
+    <div ref={blockRef}>
+      <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-black/40 mb-[10px] font-['Inter',sans-serif]">
+        {label}
+      </p>
+      <div className="flex items-center gap-[10px]">
+        {/* Before */}
         <div
-          ref={deltaRef}
-          className="inline-flex items-center px-[8px] py-[3px] rounded-full text-[10px] font-bold font-['Inter',sans-serif]"
-          style={{ background: deltaBg, color: deltaColor, opacity: 0 }}
+          className="flex-1 rounded-[10px] px-[14px] py-[12px]"
+          style={{
+            background: "rgba(244,63,94,0.06)",
+            border: "1px solid rgba(244,63,94,0.14)",
+          }}
+        >
+          <p className="text-[8.5px] font-semibold uppercase tracking-[0.8px] text-[#F43F5E]/55 mb-[4px] font-['Inter',sans-serif]">
+            Before
+          </p>
+          <p className="text-[17px] font-bold text-[#F43F5E] tabular-nums leading-none font-['Inter',sans-serif]">
+            {beforeVal}
+          </p>
+        </div>
+
+        {/* Arrow */}
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 16 16"
+          fill="none"
+          className="shrink-0 text-black/20"
+        >
+          <path
+            d="M3 8h10M9 4l4 4-4 4"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+
+        {/* After */}
+        <div
+          className="flex-1 rounded-[10px] px-[14px] py-[12px]"
+          style={{
+            background: "rgba(16,185,129,0.06)",
+            border: "1px solid rgba(16,185,129,0.18)",
+          }}
+        >
+          <p className="text-[8.5px] font-semibold uppercase tracking-[0.8px] text-[#059669]/55 mb-[4px] font-['Inter',sans-serif]">
+            After
+          </p>
+          <p className="text-[17px] font-bold text-[#059669] tabular-nums leading-none font-['Inter',sans-serif]">
+            {afterVal}
+          </p>
+        </div>
+
+        {/* Delta badge */}
+        <span
+          className="shrink-0 px-[10px] py-[5px] rounded-full text-[10px] font-bold whitespace-nowrap font-['Inter',sans-serif]"
+          style={{ background: deltaBg, color: deltaColor }}
         >
           {deltaDisplay}
-        </div>
-      </div>
-
-      {/* Before bar */}
-      <div className="flex items-center gap-[10px] mb-[6px]">
-        <div className="flex-1 h-[20px] rounded-[6px] relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
-          <div
-            className="absolute inset-y-0 left-0 rounded-[6px]"
-            style={{
-              width: beforePct !== undefined ? `${beforePct}%` : "100%",
-              background: "linear-gradient(90deg, rgba(244,63,94,0.28) 0%, rgba(244,63,94,0.12) 100%)",
-            }}
-          />
-          <span className="absolute left-[10px] inset-y-0 flex items-center text-[8.5px] font-semibold uppercase tracking-[0.8px] text-black/35 font-['Inter',sans-serif] select-none z-[1]">
-            Before
-          </span>
-        </div>
-        <span className="w-[46px] text-right text-[12px] font-semibold text-black/45 tabular-nums font-['Inter',sans-serif]">
-          {beforeDisplay}
-        </span>
-      </div>
-
-      {/* After bar */}
-      <div className="flex items-center gap-[10px]">
-        <div className="flex-1 h-[20px] rounded-[6px] relative overflow-hidden" style={{ background: "rgba(0,0,0,0.05)" }}>
-          <div
-            ref={afterBarRef}
-            className="absolute inset-y-0 left-0 rounded-[6px]"
-            style={{ background: afterBarGradient, width: `${startPct}%` }}
-          />
-          {!isZeroAfter && (
-            <span className="absolute left-[10px] inset-y-0 flex items-center text-[8.5px] font-semibold uppercase tracking-[0.8px] text-white/85 font-['Inter',sans-serif] select-none z-[1]">
-              After
-            </span>
-          )}
-          {isZeroAfter && (
-            <div className="absolute inset-0 flex items-center justify-center z-[1]">
-              <span className="text-[11px] font-bold text-[#059669] font-['Inter',sans-serif]">
-                {zeroLabel}
-              </span>
-            </div>
-          )}
-        </div>
-        <span
-          className="w-[46px] text-right text-[12px] font-semibold tabular-nums font-['Inter',sans-serif]"
-          style={{ color: deltaColor }}
-        >
-          {afterDisplay}
         </span>
       </div>
     </div>
   );
 }
 
-// ── MetricBox ─────────────────────────────────────────────────────────────────
-interface MetricBoxProps {
-  icon: React.ReactNode;
-  label: string;
-  delta: React.ReactNode;
-  sub: string;
+// ── ImpactBullets ─────────────────────────────────────────────────────────────
+interface ImpactBulletsProps {
+  bullets: [string, string, string];
   accent: string;
+  bulletsRef: React.RefObject<HTMLDivElement | null>;
 }
 
-const MetricBox = forwardRef<HTMLDivElement, MetricBoxProps>(
-  ({ icon, label, delta, sub, accent }, ref) => (
-    <div
-      ref={ref}
-      className="flex-1 rounded-[12px] p-[13px] flex flex-col"
-      style={{ background: METRIC_BOX_BG }}
-    >
-      <span
-        className="size-[22px] rounded-[6px] flex items-center justify-center mb-[9px]"
-        style={{ background: `${accent}20`, color: accent }}
-      >
-        {icon}
-      </span>
-      <p className="text-[20px] font-bold text-[#0a0a0a] leading-none tabular-nums font-['Inter',sans-serif]">
-        {delta}
-      </p>
-      <p className="mt-[5px] text-[8px] font-semibold uppercase tracking-[0.6px] text-black/40 font-['Inter',sans-serif]">
-        {label}
-      </p>
-      <p className="mt-[2px] text-[9px] text-black/40 leading-snug font-['Inter',sans-serif]">
-        {sub}
-      </p>
+function ImpactBullets({ bullets, accent, bulletsRef }: ImpactBulletsProps) {
+  return (
+    <div ref={bulletsRef} className="space-y-[8px] pt-[4px]">
+      {bullets.map((b, i) => (
+        <div key={i} className="flex items-start gap-[8px]">
+          <span
+            className="shrink-0 mt-[1px] text-[9px] leading-[1.6]"
+            style={{ color: accent }}
+          >
+            ◆
+          </span>
+          <span className="text-[12.5px] text-[#374151] leading-[1.45] font-['Inter',sans-serif]">
+            {b}
+          </span>
+        </div>
+      ))}
     </div>
-  )
-);
-MetricBox.displayName = "MetricBox";
+  );
+}
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export interface StepMetricsPanelProps {
@@ -196,325 +182,94 @@ export interface StepMetricsPanelProps {
 
 export function StepMetricsPanel({
   bucketKey,
-  completedSteps: _completedSteps,
   demoConfig,
   accent,
-  successMode: _successMode = false,
 }: StepMetricsPanelProps) {
-  const bucketIdx = BUCKET_ORDER.indexOf(bucketKey);
-  if (bucketKey === "unsyndicated") return null;
-
-  const opp = calcOpportunity(demoConfig);
-  const hc = scaledHC(demoConfig);
+  const hc  = scaledHC(demoConfig);
   const dtf = scaledDTF(demoConfig);
+  const opp = calcOpportunity(demoConfig);
+  const afterIdx = BUCKET_ORDER.indexOf(bucketKey) + 1;
 
-  const afterIdx = bucketIdx + 1;
+  const blockRef   = useRef<HTMLDivElement>(null);
+  const bulletsRef = useRef<HTMLDivElement>(null);
 
-  const isAging = bucketKey === "aging";
-  const isRaw   = bucketKey === "raw";
+  // ── Per-step metric config ────────────────────────────────────────────────
+  let metricLabel  = "";
+  let beforeVal    = "";
+  let afterVal     = "";
+  let deltaDisplay = "";
+  let deltaColor   = "#059669";
+  let deltaBg      = "#D1FAE5";
 
-  // ── Step 5 (aging) values ────────────────────────────────────────────────────
-  // DOL benchmarks — sourced from Lotlinx case data (38→22d, 42→16d range).
-  // Conservative mid used: 45d → 28d (~38% faster sell-through).
-  // Docs: METRICS_AND_DEALER_INPUTS.md §5 Step 5.
-  const AGED_DOL_BEFORE = 45;
-  const AGED_DOL_AFTER  = 28;
-  const agingDOLDelta   = AGED_DOL_BEFORE - AGED_DOL_AFTER; // 17 days
+  if (bucketKey === "raw") {
+    const scoreBefore = SCORE_STEPS[0]; // 4.2
+    const scoreAfter  = SCORE_STEPS[1]; // 5.3
+    metricLabel  = "Media Score";
+    beforeVal    = `${scoreBefore.toFixed(1)} / 10`;
+    afterVal     = `${scoreAfter.toFixed(1)} / 10`;
+    deltaDisplay = `+${(scoreAfter - scoreBefore).toFixed(1)} pts`;
+    deltaColor   = accent;
+    deltaBg      = `${accent}22`;
 
-  const agingDOLStartPct = 100;
-  const agingDOLEndPct   = Math.max(4, (AGED_DOL_AFTER / AGED_DOL_BEFORE) * 100); // ≈ 62
+  } else if (bucketKey === "nophoto" || bucketKey === "cgi") {
+    const delta = hc[0] - hc[afterIdx];
+    metricLabel  = "Gross Margin at Risk";
+    beforeVal    = fmtK(hc[0]);
+    afterVal     = fmtK(hc[afterIdx]);
+    deltaDisplay = `+${fmtK(delta)} recovered`;
 
-  // Margin at risk — uses DOL ratio instead of unit-count ratio.
-  // Grounds the financial recovery in the sell-through speed data.
-  const agingCostBefore = opp.agedMonthly;
-  const agingCostAfter  = Math.round(agingCostBefore * (AGED_DOL_AFTER / AGED_DOL_BEFORE));
-  const agingCostDelta  = agingCostBefore - agingCostAfter;
+  } else if (bucketKey === "unsyndicated") {
+    const ttmBefore = dtf[0];
+    metricLabel  = "Time to Market";
+    beforeVal    = `${ttmBefore}d`;
+    afterVal     = "1d";
+    deltaDisplay = `-${ttmBefore - 1}d`;
+    deltaColor   = accent;
+    deltaBg      = `${accent}22`;
 
-  const agingCostStartPct = agingCostBefore > 0 ? 100 : 0;
-  const agingCostEndPct   = agingCostBefore > 0 ? Math.max(4, (agingCostAfter / agingCostBefore) * 100) : 4;
-
-  const scoreBeforeAging = SCORE_STEPS[4];
-  const scoreAfterAging  = SCORE_STEPS[5];
-  const scoreDeltaAging  = +(scoreAfterAging - scoreBeforeAging).toFixed(1);
-
-  // ── TTM values ────────────────────────────────────────────────────────────────
-  const ttmBaseline  = dtf[0];
-  const ttmPrevAfter = dtf[bucketIdx];
-  const ttmAfter     = TTM_AFTER_OVERRIDE[bucketKey] ?? dtf[afterIdx];
-  const ttmDelta     = ttmBaseline - ttmAfter;
-  const isZeroTTM    = ttmAfter === 0;
-
-  const ttmStartPct = ttmBaseline > 0 ? (ttmPrevAfter / ttmBaseline) * 100 : 100;
-  const ttmEndPct   = ttmBaseline > 0 ? (ttmAfter / ttmBaseline) * 100 : 0;
-
-  // ── HC values ─────────────────────────────────────────────────────────────────
-  const hcBaseline  = hc[0];
-  const hcPrevAfter = hc[bucketIdx];
-  const hcAfter     = hc[afterIdx];
-  const hcDelta     = hcPrevAfter - hcAfter;
-
-  const hcStartPct = hcBaseline > 0 ? (hcPrevAfter / hcBaseline) * 100 : 100;
-  const hcEndPct   = hcBaseline > 0 ? Math.max(4, (hcAfter / hcBaseline) * 100) : 4;
-
-  // ── Photography cost ──────────────────────────────────────────────────────────
-  const photoBefore = demoConfig.totalInventory * demoConfig.perVinCost;
-  const photoScaleFactor = demoConfig.totalInventory / 200;
-
-  function photoCumulativeProcessed(upToStepIdx: number): number {
-    let total = 0;
-    for (let i = 0; i < upToStepIdx && i < PHOTO_VINS_PER_STEP.length; i++) {
-      total += Math.round(PHOTO_VINS_PER_STEP[i] * photoScaleFactor);
-    }
-    return total;
+  } else if (bucketKey === "aging") {
+    // Playbook Ch.5: "a 10-day delay adds $460 per unit in expense" ($46/day x 10d).
+    // Campaigns save a conservative 10 days of DOL per aged unit.
+    // costBefore = agedVehicles x holdingCostPerDay x 30d (full monthly exposure)
+    // costAfter  = agedVehicles x holdingCostPerDay x 20d (30d - 10d saved)
+    const costBefore = opp.agedMonthly;
+    const costAfter  = Math.round(costBefore * (20 / 30));
+    metricLabel  = "Gross Margin at Risk";
+    beforeVal    = fmtK(costBefore);
+    afterVal     = fmtK(costAfter);
+    deltaDisplay = `+${fmtK(costBefore - costAfter)} recovered`;
   }
 
-  const photoRemainingStart = Math.max(0, demoConfig.totalInventory - photoCumulativeProcessed(bucketIdx));
-  const photoRemainingEnd   = Math.max(0, demoConfig.totalInventory - photoCumulativeProcessed(afterIdx));
-  const photoAfterCost      = photoRemainingEnd * demoConfig.perVinCost;
-  const photoDeltaCost      = photoRemainingStart * demoConfig.perVinCost - photoAfterCost;
-  const isZeroPhoto         = photoAfterCost === 0;
-
-  const photoStartPct = photoBefore > 0 ? (photoRemainingStart / demoConfig.totalInventory) * 100 : 100;
-  const photoEndPct   = photoBefore > 0 ? Math.max(0, (photoRemainingEnd / demoConfig.totalInventory) * 100) : 0;
-
-  // ── Inventory score (steps 1-3) ───────────────────────────────────────────────
-  const scoreBeforeStep = SCORE_STEPS[bucketIdx];
-  const scoreAfterStep  = SCORE_STEPS[afterIdx];
-  const scoreDeltaStep  = +(scoreAfterStep - scoreBeforeStep).toFixed(1);
-  const scoreStartPct   = (scoreBeforeStep / 10) * 100;
-  const scoreEndPct     = (scoreAfterStep  / 10) * 100;
-
-  // ── Animation refs ────────────────────────────────────────────────────────────
-  const ttmAfterBarRef   = useRef<HTMLDivElement>(null);
-  const hcAfterBarRef    = useRef<HTMLDivElement>(null);
-  const photoAfterBarRef = useRef<HTMLDivElement>(null);
-  const scoreAfterBarRef = useRef<HTMLDivElement>(null);
-  const ttmDeltaRef      = useRef<HTMLDivElement>(null);
-  const hcDeltaRef       = useRef<HTMLDivElement>(null);
-  const photoDeltaRef    = useRef<HTMLDivElement>(null);
-  const scoreDeltaRef    = useRef<HTMLDivElement>(null);
-  const box1Ref          = useRef<HTMLDivElement>(null);
-  const box2Ref          = useRef<HTMLDivElement>(null);
-  const box3Ref          = useRef<HTMLDivElement>(null);
-
+  // ── Entrance animation ────────────────────────────────────────────────────
   useEffect(() => {
     const tl = gsap.timeline({ delay: 0.15 });
 
-    if (isAging) {
-      if (ttmAfterBarRef.current) {
-        gsap.set(ttmAfterBarRef.current, { width: `${agingDOLStartPct}%` });
-        tl.to(ttmAfterBarRef.current, { width: `${agingDOLEndPct}%`, duration: 0.8, ease: "power3.out" }, 0);
-      }
-      if (hcAfterBarRef.current) {
-        gsap.set(hcAfterBarRef.current, { width: `${agingCostStartPct}%` });
-        tl.to(hcAfterBarRef.current, { width: `${agingCostEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.1);
-      }
-      tl.fromTo(
-        [ttmDeltaRef.current, hcDeltaRef.current],
-        { opacity: 0, scale: 0.75, y: 4 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
-        0.65
-      );
-      tl.fromTo(
-        [box1Ref.current, box2Ref.current, box3Ref.current],
-        { opacity: 0, y: 18 },
-        { opacity: 1, y: 0, duration: 0.42, ease: "power3.out", stagger: 0.09 },
-        0.78
-      );
-    } else if (isRaw) {
-      if (photoAfterBarRef.current) {
-        gsap.set(photoAfterBarRef.current, { width: `${photoStartPct}%` });
-        tl.to(photoAfterBarRef.current, { width: `${photoEndPct}%`, duration: 0.8, ease: "power3.out" }, 0);
-      }
-      if (scoreAfterBarRef.current) {
-        gsap.set(scoreAfterBarRef.current, { width: `${scoreStartPct}%` });
-        tl.to(scoreAfterBarRef.current, { width: `${scoreEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.1);
-      }
-      tl.fromTo(
-        [photoDeltaRef.current, scoreDeltaRef.current],
-        { opacity: 0, scale: 0.75, y: 4 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
-        0.65
-      );
-    } else {
-      if (ttmAfterBarRef.current) {
-        gsap.set(ttmAfterBarRef.current, { width: `${ttmStartPct}%` });
-        tl.to(ttmAfterBarRef.current, { width: `${Math.max(0, ttmEndPct)}%`, duration: 0.8, ease: "power3.out" }, 0);
-      }
-      if (hcAfterBarRef.current) {
-        gsap.set(hcAfterBarRef.current, { width: `${hcStartPct}%` });
-        tl.to(hcAfterBarRef.current, { width: `${hcEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.1);
-      }
-      if (photoAfterBarRef.current) {
-        gsap.set(photoAfterBarRef.current, { width: `${photoStartPct}%` });
-        tl.to(photoAfterBarRef.current, { width: `${photoEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.2);
-      }
-      if (scoreAfterBarRef.current) {
-        gsap.set(scoreAfterBarRef.current, { width: `${scoreStartPct}%` });
-        tl.to(scoreAfterBarRef.current, { width: `${scoreEndPct}%`, duration: 0.8, ease: "power3.out" }, 0.3);
-      }
-      tl.fromTo(
-        [ttmDeltaRef.current, hcDeltaRef.current, photoDeltaRef.current, scoreDeltaRef.current],
-        { opacity: 0, scale: 0.75, y: 4 },
-        { opacity: 1, scale: 1, y: 0, duration: 0.32, ease: "back.out(1.7)", stagger: 0.09 },
-        0.65
-      );
-    }
+    if (blockRef.current) gsap.set(blockRef.current, { opacity: 0, y: 10 });
+    if (bulletsRef.current) gsap.set(bulletsRef.current, { opacity: 0, y: 14 });
+
+    tl.to(blockRef.current,   { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" }, 0);
+    tl.to(bulletsRef.current, { opacity: 1, y: 0, duration: 0.38, ease: "power3.out" }, 0.5);
 
     return () => { tl.kill(); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bucketKey]);
 
-  // ── Render ────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-[12px]">
-      {isAging ? (
-        <div>
-          <GraphSection
-            title="Avg. days on lot — aged units"
-            beforeDisplay={`${AGED_DOL_BEFORE}d`}
-            afterDisplay={`${AGED_DOL_AFTER}d`}
-            deltaDisplay={`-${agingDOLDelta}d per unit`}
-            deltaColor="#EF4444"
-            deltaBg="#FEE2E2"
-            startPct={agingDOLStartPct}
-            endPct={agingDOLEndPct}
-            afterBarRef={ttmAfterBarRef}
-            deltaRef={ttmDeltaRef}
-            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
-          />
-          <GraphSection
-            title="Margin at risk · monthly"
-            beforeDisplay={fmtK(agingCostBefore)}
-            afterDisplay={fmtK(agingCostAfter)}
-            deltaDisplay={`+${fmtK(agingCostDelta)} recovered`}
-            deltaColor="#10B981"
-            deltaBg="#D1FAE5"
-            startPct={agingCostStartPct}
-            endPct={agingCostEndPct}
-            afterBarRef={hcAfterBarRef}
-            deltaRef={hcDeltaRef}
-            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
-          />
-          <div className="flex gap-[8px] pt-[10px]">
-            <MetricBox
-              ref={box1Ref}
-              icon={<Zap size={13} strokeWidth={2.5} />}
-              label="VDP views on aged listings"
-              delta="+40%"
-              sub="campaign visual treatment"
-              accent="#EF4444"
-            />
-            <MetricBox
-              ref={box2Ref}
-              icon={<DollarSign size={13} strokeWidth={2.5} />}
-              label="Margin recovered"
-              delta={`+${fmtK(agingCostDelta)}`}
-              sub="vs. no campaign"
-              accent="#10B981"
-            />
-            <MetricBox
-              ref={box3Ref}
-              icon={<Activity size={13} strokeWidth={2.5} />}
-              label="Listing quality"
-              delta={scoreAfterAging.toFixed(1)}
-              sub={`+${scoreDeltaAging} pts  ·  0 – 10`}
-              accent="#7C3AED"
-            />
-          </div>
-        </div>
-      ) : isRaw ? (
-        <div>
-          <GraphSection
-            title="Photography cost"
-            beforeDisplay={fmtK(photoBefore)}
-            afterDisplay={isZeroPhoto ? "$0" : fmtK(photoAfterCost)}
-            deltaDisplay={`+${fmtK(photoDeltaCost)} saved`}
-            deltaColor="#0891B2"
-            deltaBg="#E0F2FE"
-            startPct={photoStartPct}
-            endPct={photoEndPct}
-            afterBarRef={photoAfterBarRef}
-            deltaRef={photoDeltaRef}
-            afterBarGradient="linear-gradient(90deg, #0891B2 0%, #0E7490 100%)"
-            isZeroAfter={isZeroPhoto}
-            zeroLabel="Eliminated"
-          />
-          <GraphSection
-            title="Inventory score"
-            beforeDisplay={`${scoreBeforeStep.toFixed(1)}/10`}
-            afterDisplay={`${scoreAfterStep.toFixed(1)}/10`}
-            deltaDisplay={`+${scoreDeltaStep} pts`}
-            deltaColor={accent}
-            deltaBg={`${accent}20`}
-            startPct={scoreStartPct}
-            endPct={scoreEndPct}
-            beforePct={scoreStartPct}
-            afterBarRef={scoreAfterBarRef}
-            deltaRef={scoreDeltaRef}
-            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
-          />
-        </div>
-      ) : (
-        <div>
-          <GraphSection
-            title="Time to market"
-            beforeDisplay={`${ttmBaseline}d`}
-            afterDisplay={isZeroTTM ? "0d" : `${ttmAfter}d`}
-            deltaDisplay={`-${ttmDelta}d`}
-            deltaColor={accent}
-            deltaBg={`${accent}20`}
-            startPct={ttmStartPct}
-            endPct={ttmEndPct}
-            afterBarRef={ttmAfterBarRef}
-            deltaRef={ttmDeltaRef}
-            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
-            isZeroAfter={isZeroTTM}
-          />
-          <GraphSection
-            title="Gross margin at risk"
-            beforeDisplay={fmtK(hcBaseline)}
-            afterDisplay={fmtK(hcAfter)}
-            deltaDisplay={`+${fmtK(hcDelta)} recovered`}
-            deltaColor="#059669"
-            deltaBg="#D1FAE5"
-            startPct={hcStartPct}
-            endPct={hcEndPct}
-            afterBarRef={hcAfterBarRef}
-            deltaRef={hcDeltaRef}
-            afterBarGradient="linear-gradient(90deg, #10B981 0%, #059669 100%)"
-          />
-          <GraphSection
-            title="Photography cost"
-            beforeDisplay={fmtK(photoBefore)}
-            afterDisplay={isZeroPhoto ? "$0" : fmtK(photoAfterCost)}
-            deltaDisplay={`+${fmtK(photoDeltaCost)} saved`}
-            deltaColor="#0891B2"
-            deltaBg="#E0F2FE"
-            startPct={photoStartPct}
-            endPct={photoEndPct}
-            afterBarRef={photoAfterBarRef}
-            deltaRef={photoDeltaRef}
-            afterBarGradient="linear-gradient(90deg, #0891B2 0%, #0E7490 100%)"
-            isZeroAfter={isZeroPhoto}
-            zeroLabel="Eliminated"
-          />
-          <GraphSection
-            title="Inventory score"
-            beforeDisplay={`${scoreBeforeStep.toFixed(1)}/10`}
-            afterDisplay={`${scoreAfterStep.toFixed(1)}/10`}
-            deltaDisplay={`+${scoreDeltaStep} pts`}
-            deltaColor={accent}
-            deltaBg={`${accent}20`}
-            startPct={scoreStartPct}
-            endPct={scoreEndPct}
-            beforePct={scoreStartPct}
-            afterBarRef={scoreAfterBarRef}
-            deltaRef={scoreDeltaRef}
-            afterBarGradient={`linear-gradient(90deg, ${accent} 0%, ${accent}CC 100%)`}
-          />
-        </div>
-      )}
+    <div className="space-y-[16px]">
+      <BeforeAfterBlock
+        label={metricLabel}
+        beforeVal={beforeVal}
+        afterVal={afterVal}
+        deltaDisplay={deltaDisplay}
+        deltaColor={deltaColor}
+        deltaBg={deltaBg}
+        blockRef={blockRef}
+      />
+      <ImpactBullets
+        bullets={STEP_BULLETS[bucketKey]}
+        accent={accent}
+        bulletsRef={bulletsRef}
+      />
     </div>
   );
 }

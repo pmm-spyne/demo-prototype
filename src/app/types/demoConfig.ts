@@ -7,6 +7,7 @@ export interface DemoConfig {
   // ── Identity ──────────────────────────────────────────────────────────
   aeName: string;
   dealershipName: string;
+  enterpriseId: string;
   imsProvider: string;
 
   // ── Dealership profile (discovery) ────────────────────────────────────
@@ -75,6 +76,7 @@ export function calcPhotographyCostMonthly(c: DemoConfig): number {
 export const DEFAULT_DEMO_CONFIG: DemoConfig = {
   aeName: "",
   dealershipName: "",
+  enterpriseId: "",
   imsProvider: "Vincue",
 
   numRooftops: "",

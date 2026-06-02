@@ -438,63 +438,38 @@ internal claims for these benchmarks.
   stock/no-photo. Source: xciteauto.com citing Cox Automotive (2024).
 - Demo uses **+40% VDP views** as the conservative, multi-source supported figure.
 
-**Sell-through speed reduction for promoted aged units:**
-- Lotlinx / McCarthy Auto Group (12 rooftops, Kansas City): average DOL for units in a VIN-targeted
-  campaign dropped from **42 days → 16 days** (62% reduction). Source: lotlinx.com/mccarthy.
-- Lotlinx / Fayetteville Dodge Ram: average DOL from **38 days → 22 days** (42% reduction).
-  Source: willowoodventures.com Lotlinx case study.
-- Lotlinx OEM study (Dec 2023): **51% of units with 60+ DOL were sold** through a VIN-targeted
-  campaign; 87% of traffic was net-new to dealer site. Source: lotlinx.com/oem-aging-inventory.
-- Demo uses **45 days → 28 days** (38% reduction) — a conservative midpoint of the Lotlinx range
-  that avoids the headline McCarthy result while remaining defensible.
+**Sell-through speed and gross erosion — playbook basis:**
+- Used-Car Playbook Ch.8 "The Math Behind Aging": At day 45, $46 × 45 = $2,070 spent =
+  **59% of average front gross ($3,500) already burned**. By day 60 it is 79%. By day 75 it
+  is essentially the entire front gross.
+- Used-Car Playbook Ch.6 §6 "The Break-Even Point": $3,500 ÷ $46 = **76-day break-even**.
+  Every day past day 76 is a net loss on that unit.
+- Used-Car Playbook Ch.5 §5: "a 10-day delay at $46/day adds $460 per unit in expense.
+  That wipes out 13% of your gross."
+- Demo uses a **conservative 10-day DOL reduction** per aged unit from campaign treatment.
+  This is grounded in the playbook's own per-day math, requires no external citation, and
+  is intentionally understated.
 
-**Holding cost and margin erosion benchmarks:**
-- NADA 2025 Dealership Financial Profile: **$32–$48/day** per vehicle (floorplan + insurance +
-  lot + depreciation). Source: NADA/US Tech Automations citing NADA 2025.
-- WardsAuto / Colonnade Advisors (2024): **$40/day new, $85/day used**. Average turn time
-  now 50.2 days, up 23% from 2023. Source: wardsauto.com.
-- AutoAuctionAtlas: average used-car front gross **$1,668/unit in Q2 2025**, margin compressed
-  to 5.4% (from 7.3% in 2019). After 46-60 DOL, **22-30% of front gross is eroded** by holding
-  costs alone. Source: autoauctionatlas.com / NADA 2025 benchmark table.
-- Demo default of **$46/day** sits at the NADA midpoint and is intentionally conservative.
+**Holding cost benchmark:**
+- Demo default of **$46/day** is the industry midpoint per the Used-Car Playbook Ch.6
+  ($40-$50/day range, NADA benchmark).
 
-#### Graph 1 — Average days on lot, aged units
-
-This is the **mechanism graph** — it shows campaigns directly accelerating sell-through.
-
-| | Value | Notes |
-|---|---|---|
-| Before | `45` days | Fixed constant. 45-day floor is the threshold at which the aging cohort is defined. |
-| After | `28` days | Campaign target. Sourced from Lotlinx case data (38→22d avg, conservative mid). |
-| Delta | `-17d per unit` | Displayed as `-17d` |
-| Bar — Before | 100% width | Static reference (red gradient) |
-| Bar — After | `(28 / 45) × 100` ≈ 62% | Green gradient, animates from 100% → 62% on mount |
+#### Gross Margin at Risk — monthly (Step 5 metric)
 
 ```
-AGED_DOL_BEFORE = 45   // constant
-AGED_DOL_AFTER  = 28   // constant
-agingDOLStartPct = 100
-agingDOLEndPct   = Math.max(4, (AGED_DOL_AFTER / AGED_DOL_BEFORE) * 100)  // ≈ 62
-```
-
-#### Graph 2 — Margin at risk · monthly
-
-This is the **financial outcome graph**. It is labelled "Margin at risk" (not "Holding cost")
-because it captures both the direct holding cost savings AND the avoided markdown risk.
-
-```
-agingCostBefore  = agedVehicles × holdingCostPerDay × 30       (from calcOpportunity — unchanged)
-agingCostAfter   = round(agingCostBefore × (28 / 45))          (DOL-ratio formula — replaces 10/15)
+agingCostBefore  = agedVehicles × holdingCostPerDay × 30       (from calcOpportunity)
+agingCostAfter   = round(agingCostBefore × (20 / 30))          (10 days saved per unit)
 agingCostDelta   = agingCostBefore - agingCostAfter
 ```
 
-At demo defaults ($46/day, 200 units → 30 aged vehicles):
-- Before: 30 × $46 × 30 = **$41,400**
-- After: $41,400 × (28/45) = **$25,760**
-- Recovered: **$15,640**
+The `(20/30)` ratio represents 30 days of monthly exposure reduced to 20 days (10 days
+saved per aged unit from campaign-driven faster sell-through). This is derived from the
+playbook's own "10-day delay = $460 per unit" logic, not from any external vendor claim.
 
-This is stronger than the old `(10/15)` ratio which only recovered $13,800 and was based on
-unit-count reduction rather than the campaign-driven DOL data.
+At demo defaults ($46/day, 200 units → 30 aged vehicles):
+- Before: 30 × $46 × 30 = **$41,400/month**
+- After: 30 × $46 × 20 = **$27,600/month**
+- Recovered: **$13,800/month**
 
 | | Value |
 |---|---|

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import {
   Sparkles, ArrowRight, Camera, Clock, DollarSign,
-  ChevronDown, ChevronUp, Info,
+  ChevronDown, ChevronUp, Info, ArrowLeft, CheckCircle2,
 } from "lucide-react";
 import { SpyneMark } from "./AppShell";
 import {
@@ -130,24 +130,6 @@ function MultiChipGroup({
           {opt}
         </button>
       ))}
-    </div>
-  );
-}
-
-// Left panel section wrapper
-function PanelSection({
-  title, children, last,
-}: {
-  title: string;
-  children: React.ReactNode;
-  last?: boolean;
-}) {
-  return (
-    <div className={`px-[20px] py-[16px] ${last ? "" : "border-b border-black/8"}`}>
-      <p className="text-[9px] font-bold uppercase tracking-[1.2px] text-[#4600F2]/60 mb-[13px] font-['Inter:Bold',sans-serif]">
-        {title}
-      </p>
-      <div className="space-y-[13px]">{children}</div>
     </div>
   );
 }
@@ -298,6 +280,80 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
+// ─── Section card wrapper (step 1) ────────────────────────────────────────
+
+function SectionCard({
+  title, accentFrom, accentTo, children,
+}: {
+  title: string;
+  accentFrom: string;
+  accentTo: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="bg-white rounded-[16px] border border-black/8 overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+      <div
+        className="h-[3px]"
+        style={{ background: `linear-gradient(90deg, ${accentFrom}, ${accentTo})` }}
+      />
+      <div className="px-[22px] py-[18px]">
+        <p
+          className="text-[9px] font-bold uppercase tracking-[1.2px] mb-[16px] font-['Inter:Bold',sans-serif]"
+          style={{ color: `${accentFrom}b0` }}
+        >
+          {title}
+        </p>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+// ─── Step indicator ────────────────────────────────────────────────────────
+
+function StepIndicator({ step }: { step: 1 | 2 }) {
+  const steps = [
+    { n: 1 as const, label: "Discovery" },
+    { n: 2 as const, label: "Opportunity" },
+  ];
+  return (
+    <div className="flex items-center gap-[4px]">
+      {steps.map(({ n, label }, i) => (
+        <div key={n} className="flex items-center gap-[4px]">
+          {i > 0 && (
+            <div
+              className="w-[28px] h-[2px] rounded-full mx-[2px] transition-colors"
+              style={{ background: step >= n ? "#4600F2" : "rgba(0,0,0,0.12)" }}
+            />
+          )}
+          <div
+            className={`flex items-center gap-[6px] px-[10px] py-[5px] rounded-full text-[11px] font-semibold transition-all font-['Inter:Semi_Bold',sans-serif] ${
+              step === n
+                ? "bg-[#4600F2] text-white shadow-[0_2px_8px_rgba(70,0,242,0.3)]"
+                : step > n
+                ? "bg-[#4600F2]/10 text-[#4600F2]"
+                : "bg-black/6 text-black/40"
+            }`}
+          >
+            {step > n ? (
+              <CheckCircle2 size={11} strokeWidth={2.5} />
+            ) : (
+              <span
+                className={`size-[15px] rounded-full flex items-center justify-center text-[8px] font-bold font-['Inter:Bold',sans-serif] ${
+                  step === n ? "bg-white/25 text-white" : "bg-black/10 text-black/50"
+                }`}
+              >
+                {n}
+              </span>
+            )}
+            {label}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Main screen ───────────────────────────────────────────────────────────
 
 interface Props {
@@ -305,7 +361,9 @@ interface Props {
 }
 
 export function DemoSetupScreen({ onLaunch }: Props) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const step1Ref = useRef<HTMLDivElement>(null);
+  const step2Ref = useRef<HTMLDivElement>(null);
+  const [step, setStep] = useState<1 | 2>(1);
   const [config, setConfig] = useState<DemoConfig>(DEFAULT_DEMO_CONFIG);
   const [showBreakdown, setShowBreakdown] = useState(false);
   const [showDiscovery, setShowDiscovery] = useState(false);
@@ -315,7 +373,6 @@ export function DemoSetupScreen({ onLaunch }: Props) {
 
   const opp = calcOpportunity(config);
 
-  // Holding cost chip handler — syncs both chip label and numeric value
   const setHoldingCostChip = (chip: string) => {
     set("holdingCostChip", chip);
     if (chip !== "Custom") {
@@ -323,22 +380,26 @@ export function DemoSetupScreen({ onLaunch }: Props) {
     }
   };
 
-  // GSAP entrance
+  // GSAP entrance animation on step change
   useEffect(() => {
-    const el = containerRef.current;
+    const el = step === 1 ? step1Ref.current : step2Ref.current;
     if (!el) return;
     const items = el.querySelectorAll<HTMLElement>("[data-fade]");
     gsap.fromTo(
       items,
-      { y: 14, opacity: 0 },
-      { y: 0, opacity: 1, duration: 0.45, stagger: 0.05, ease: "power3.out" }
+      { y: 16, opacity: 0 },
+      { y: 0, opacity: 1, duration: 0.4, stagger: 0.045, ease: "power3.out" }
     );
-  }, []);
+  }, [step]);
+
+  const inputClass =
+    "w-full h-[36px] px-[11px] rounded-[8px] border border-black/12 bg-[#FAFAFA] text-[13px] text-[#0a0a0a] outline-none focus:border-[#4600F2] focus:bg-white transition-colors font-['Inter:Regular',sans-serif] placeholder:text-black/30";
 
   return (
-    <div className="min-h-screen bg-[#F5F3FF] flex flex-col">
-      {/* Top bar */}
-      <div className="bg-white border-b border-black/8 h-[52px] flex items-center justify-between px-[28px] shrink-0">
+    <div className="min-h-screen bg-[#F0EEFF] flex flex-col">
+
+      {/* ── Top bar ───────────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-black/8 h-[54px] flex items-center justify-between px-[28px] shrink-0 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
         <div className="flex items-center gap-[10px]">
           <SpyneMark />
           <span className="font-bold text-[#402387] text-[18px] leading-none font-['Inter:Bold',sans-serif]">
@@ -348,249 +409,337 @@ export function DemoSetupScreen({ onLaunch }: Props) {
             Demo Setup
           </span>
         </div>
+
+        <StepIndicator step={step} />
+
         <p className="text-[12px] text-black/40 font-['Inter:Regular',sans-serif]">
-          Fill in prospect details, then launch the personalised demo
+          {step === 1
+            ? "Fill in prospect details to personalise the demo"
+            : "Review the opportunity model, then launch"}
         </p>
       </div>
 
-      <div ref={containerRef} className="flex flex-1 min-h-0 overflow-hidden">
+      {/* ══════════════════════════════════════════════════════════════════
+          STEP 1 — Discovery form
+      ══════════════════════════════════════════════════════════════════ */}
+      {step === 1 && (
+        <div ref={step1Ref} className="flex-1 overflow-auto">
+          <div className="max-w-[960px] mx-auto px-[32px] py-[32px]">
 
-        {/* ── LEFT: Discovery panel ────────────────────────────────────── */}
-        <div className="w-[340px] shrink-0 bg-white border-r border-black/8 flex flex-col overflow-auto">
-
-          {/* Section 1: Account Details */}
-          <PanelSection title="Account Details">
-            <div data-fade>
-              <FieldLabel>AE Name</FieldLabel>
-              <input
-                type="text"
-                placeholder="Enter AE name"
-                value={config.aeName}
-                onChange={(e) => set("aeName", e.target.value)}
-                className="w-full h-[34px] px-[10px] rounded-[8px] border border-black/15 bg-[#FAFAFA] text-[13px] text-[#0a0a0a] outline-none focus:border-[#4600F2] font-['Inter:Regular',sans-serif] placeholder:text-black/30"
-              />
+            {/* Page intro */}
+            <div data-fade className="mb-[24px]">
+              <h1 className="text-[22px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] mb-[5px]">
+                Tell us about the prospect
+              </h1>
+              <p className="text-[13px] text-black/50 font-['Inter:Regular',sans-serif]">
+                These details personalise every number in the demo — the more you fill in, the sharper the pitch.
+              </p>
             </div>
 
-            <div data-fade>
-              <FieldLabel>Dealership Name</FieldLabel>
-              <input
-                type="text"
-                placeholder="e.g. Valley Toyota"
-                value={config.dealershipName}
-                onChange={(e) => set("dealershipName", e.target.value)}
-                className="w-full h-[34px] px-[10px] rounded-[8px] border border-black/15 bg-[#FAFAFA] text-[13px] text-[#0a0a0a] outline-none focus:border-[#4600F2] font-['Inter:Regular',sans-serif] placeholder:text-black/30"
-              />
-            </div>
+            {/* ── Single-column stack: one section per row ── */}
+            <div className="space-y-[12px]">
 
-            <div data-fade>
-              <FieldLabel>IMS Provider</FieldLabel>
-              <ChipGroup
-                options={IMS_OPTIONS}
-                value={config.imsProvider}
-                onChange={(v) => set("imsProvider", v)}
-              />
-            </div>
-          </PanelSection>
-
-          {/* Section 2: Dealership Profile */}
-          <PanelSection title="Dealership Profile">
-            <div data-fade>
-              <FieldLabel>Number of Rooftops</FieldLabel>
-              <ChipGroup
-                options={ROOFTOP_OPTIONS}
-                value={config.numRooftops}
-                onChange={(v) => set("numRooftops", v)}
-              />
-            </div>
-
-            <div data-fade>
-              <FieldLabel>Inventory Mix</FieldLabel>
-              <ChipGroup
-                options={INVENTORY_MIX_OPTIONS}
-                value={config.inventoryMix}
-                onChange={(v) => set("inventoryMix", v)}
-              />
-            </div>
-
-            <div data-fade>
-              <Slider
-                label="Units on Lot"
-                value={config.totalInventory}
-                min={50}
-                max={2000}
-                step={10}
-                format={(v) => `${v}`}
-                required
-                benchmark="Avg. active inventory at any given time across all rooftops"
-                onChange={(v) => set("totalInventory", v)}
-              />
-            </div>
-          </PanelSection>
-
-          {/* Section 3: Current Process */}
-          <PanelSection title="Current Process">
-            <div data-fade>
-              <FieldLabel
-                required
-                hint="Drives the frontline gap cost in the financial model"
-              >
-                Avg Days from Acquisition to Listing Go-Live
-              </FieldLabel>
-              <ChipGroup
-                options={DAYS_TO_LIVE_OPTIONS}
-                value={config.daysToLiveChip}
-                onChange={(v) => set("daysToLiveChip", v)}
-              />
-              {config.daysToLiveChip && (
-                <p className="mt-[6px] text-[10px] text-[#4600F2]/70 font-['Inter:Regular',sans-serif]">
-                  Studio AI target: 1 day &rarr; saves{" "}
-                  <span className="font-bold">
-                    {opp.frontlineGapDays} days x ${config.holdingCostPerDay} x{" "}
-                    {config.monthlySalesVolume} units/mo
-                  </span>
-                </p>
-              )}
-            </div>
-
-            <div data-fade>
-              <FieldLabel
-                required
-                hint="Estimates % of inventory without photos for media gap calculation"
-              >
-                Current Photography Process
-              </FieldLabel>
-              <ChipGroup
-                options={PHOTO_PROCESS_OPTIONS}
-                value={config.photographyProcess}
-                onChange={(v) => set("photographyProcess", v)}
-              />
-              {config.photographyProcess && (
-                <p className="mt-[6px] text-[10px] text-black/45 font-['Inter:Regular',sans-serif]">
-                  Est.{" "}
-                  <span className="font-semibold text-[#EF4444]">
-                    ~{PHOTO_PROCESS_GAP_MAP[config.photographyProcess]}%
-                  </span>{" "}
-                  of inventory without photos
-                </p>
-              )}
-            </div>
-
-            <div data-fade>
-              <FieldLabel>Media Formats Currently Produced</FieldLabel>
-              <MultiChipGroup
-                options={MEDIA_FORMAT_OPTIONS}
-                values={config.mediaFormats}
-                onChange={(v) => set("mediaFormats", v)}
-              />
-            </div>
-          </PanelSection>
-
-          {/* Section 4: Pain Points & Spend */}
-          <PanelSection title="Pain Points & Spend" last>
-            <div data-fade>
-              <FieldLabel required>Biggest Pain Points</FieldLabel>
-              <MultiChipGroup
-                options={PAIN_POINT_OPTIONS}
-                values={config.painPoints}
-                onChange={(v) => set("painPoints", v)}
-              />
-            </div>
-
-            {/* Photography spend — two input modes, fill either one */}
-            <div data-fade className="rounded-[10px] border border-black/8 bg-[#FAFAFA] p-[12px] space-y-[10px]">
-              <div>
-                <FieldLabel hint="Common for vendors charging per shoot. Industry baseline: $15-$25/VIN.">
-                  Cost per VIN
-                </FieldLabel>
-                <div className="flex items-center h-[30px] bg-white rounded-[8px] px-[9px] border border-black/12 focus-within:border-[#4600F2] w-[120px]">
-                  <span className="text-[12px] text-black/50 font-semibold mr-[2px]">$</span>
-                  <input
-                    type="number"
-                    value={config.perVinCost}
-                    onChange={(e) => set("perVinCost", Number(e.target.value) || 0)}
-                    className="flex-1 bg-transparent outline-none text-[13px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] min-w-0"
-                  />
-                  <span className="text-[10px] text-black/35 ml-[2px]">/ car</span>
-                </div>
-                {config.perVinCost > 0 && (
-                  <p className="mt-[5px] text-[10px] text-black/40 font-['Inter:Regular',sans-serif]">
-                    At {config.totalInventory} units: est.{" "}
-                    <span className="font-semibold text-black/60">
-                      ${(config.perVinCost * config.totalInventory).toLocaleString()}/mo
-                    </span>{" "}
-                    in photography costs
-                  </p>
-                )}
+              {/* 1 ── Account Details */}
+              <div data-fade>
+                <SectionCard title="Account Details" accentFrom="#4600F2" accentTo="#B651D7">
+                  <div className="grid grid-cols-[1fr_1fr_1fr_1.6fr] gap-[16px] items-start">
+                    <div>
+                      <FieldLabel>AE Name</FieldLabel>
+                      <input
+                        type="text"
+                        placeholder="Enter AE name"
+                        value={config.aeName}
+                        onChange={(e) => set("aeName", e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>Dealership Name</FieldLabel>
+                      <input
+                        type="text"
+                        placeholder="e.g. Valley Toyota"
+                        value={config.dealershipName}
+                        onChange={(e) => set("dealershipName", e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel hint="Spyne CRM enterprise account identifier">
+                        Enterprise ID
+                      </FieldLabel>
+                      <input
+                        type="text"
+                        placeholder="e.g. ENT-10042"
+                        value={config.enterpriseId}
+                        onChange={(e) => set("enterpriseId", e.target.value)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>IMS Provider</FieldLabel>
+                      <ChipGroup
+                        options={IMS_OPTIONS}
+                        value={config.imsProvider}
+                        onChange={(v) => set("imsProvider", v)}
+                      />
+                    </div>
+                  </div>
+                </SectionCard>
               </div>
 
-              <div className="flex items-center gap-[8px]">
-                <div className="flex-1 h-px bg-black/8" />
-                <span className="text-[9px] font-bold uppercase tracking-[0.6px] text-black/30 font-['Inter:Bold',sans-serif]">or</span>
-                <div className="flex-1 h-px bg-black/8" />
+              {/* 2 ── Dealership Profile */}
+              <div data-fade>
+                <SectionCard title="Dealership Profile" accentFrom="#0891B2" accentTo="#06B6D4">
+                  <div className="grid grid-cols-3 gap-[20px] items-start">
+                    <div>
+                      <FieldLabel>Number of Rooftops</FieldLabel>
+                      <ChipGroup
+                        options={ROOFTOP_OPTIONS}
+                        value={config.numRooftops}
+                        onChange={(v) => set("numRooftops", v)}
+                      />
+                    </div>
+                    <div>
+                      <FieldLabel>Inventory Mix</FieldLabel>
+                      <ChipGroup
+                        options={INVENTORY_MIX_OPTIONS}
+                        value={config.inventoryMix}
+                        onChange={(v) => set("inventoryMix", v)}
+                      />
+                    </div>
+                    <div>
+                      <Slider
+                        label="Units on Lot"
+                        value={config.totalInventory}
+                        min={50}
+                        max={2000}
+                        step={10}
+                        format={(v) => `${v}`}
+                        required
+                        benchmark="Avg. active inventory across all rooftops"
+                        onChange={(v) => set("totalInventory", v)}
+                      />
+                    </div>
+                  </div>
+                </SectionCard>
               </div>
 
-              <div>
-                <FieldLabel hint="Total monthly outlay including vendor fees, labour, and editing">
-                  Monthly Photography Spend
-                </FieldLabel>
-                <div className="flex flex-wrap gap-[6px]">
-                  {SPEND_OPTIONS.map((opt) => (
-                    <button
-                      key={opt}
-                      type="button"
-                      onClick={() =>
-                        set("monthlyPhotographySpend", config.monthlyPhotographySpend === opt ? "" : opt)
-                      }
-                      className={`h-[26px] px-[9px] rounded-full text-[10px] font-semibold border transition-colors font-['Inter:Semi_Bold',sans-serif] ${
-                        config.monthlyPhotographySpend === opt
-                          ? "bg-[#4600F2] text-white border-[#4600F2]"
-                          : "bg-white text-black/60 border-black/15 hover:border-[#4600F2]/40"
-                      }`}
-                    >
-                      {opt}
-                    </button>
-                  ))}
-                </div>
+              {/* 3 ── Current Process */}
+              <div data-fade>
+                <SectionCard title="Current Process" accentFrom="#F59E0B" accentTo="#FCD34D">
+                  <div className="grid grid-cols-3 gap-[20px] items-start">
+                    <div>
+                      <FieldLabel required hint="Drives the frontline gap cost in the financial model">
+                        Avg Days from Acquisition to Go-Live
+                      </FieldLabel>
+                      <ChipGroup
+                        options={DAYS_TO_LIVE_OPTIONS}
+                        value={config.daysToLiveChip}
+                        onChange={(v) => set("daysToLiveChip", v)}
+                      />
+                      {config.daysToLiveChip && (
+                        <p className="mt-[6px] text-[10px] text-[#4600F2]/70 font-['Inter:Regular',sans-serif]">
+                          Studio AI target: 1 day &rarr; saves{" "}
+                          <span className="font-bold">
+                            {opp.frontlineGapDays}d &times; ${config.holdingCostPerDay} &times; {config.monthlySalesVolume} units/mo
+                          </span>
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <FieldLabel required hint="Estimates % of inventory without photos for media gap calculation">
+                        Current Photography Process
+                      </FieldLabel>
+                      <ChipGroup
+                        options={PHOTO_PROCESS_OPTIONS}
+                        value={config.photographyProcess}
+                        onChange={(v) => set("photographyProcess", v)}
+                      />
+                      {config.photographyProcess && (
+                        <p className="mt-[6px] text-[10px] text-black/45 font-['Inter:Regular',sans-serif]">
+                          Est.{" "}
+                          <span className="font-semibold text-[#EF4444]">
+                            ~{PHOTO_PROCESS_GAP_MAP[config.photographyProcess]}%
+                          </span>{" "}
+                          of inventory without photos
+                        </p>
+                      )}
+                    </div>
+                    <div>
+                      <FieldLabel>Media Formats Currently Produced</FieldLabel>
+                      <MultiChipGroup
+                        options={MEDIA_FORMAT_OPTIONS}
+                        values={config.mediaFormats}
+                        onChange={(v) => set("mediaFormats", v)}
+                      />
+                    </div>
+                  </div>
+                </SectionCard>
               </div>
+
+              {/* 4 ── Pain Points & Spend */}
+              <div data-fade>
+                <SectionCard title="Pain Points & Spend" accentFrom="#EF4444" accentTo="#F87171">
+                  <div className="grid grid-cols-[1.2fr_1fr] gap-[24px] items-start">
+
+                    {/* Pain points */}
+                    <div>
+                      <FieldLabel required>Biggest Pain Points</FieldLabel>
+                      <MultiChipGroup
+                        options={PAIN_POINT_OPTIONS}
+                        values={config.painPoints}
+                        onChange={(v) => set("painPoints", v)}
+                      />
+
+                      {/* Discovery script */}
+                      <div className="mt-[14px]">
+                        <button
+                          type="button"
+                          onClick={() => setShowDiscovery((v) => !v)}
+                          className="inline-flex items-center gap-[5px] text-[10px] font-semibold text-black/40 hover:text-[#4600F2] transition-colors font-['Inter:Semi_Bold',sans-serif]"
+                        >
+                          {showDiscovery ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                          {showDiscovery ? "Hide" : "Show"} discovery script
+                        </button>
+                        {showDiscovery && (
+                          <ol className="mt-[10px] space-y-[7px]">
+                            {DISCOVERY_QUESTIONS.map((q, i) => (
+                              <li key={i} className="flex gap-[8px]">
+                                <span className="shrink-0 size-[17px] rounded-full bg-[rgba(70,0,242,0.08)] text-[9px] font-bold text-[#4600F2] flex items-center justify-center mt-[1px] font-['Inter:Bold',sans-serif]">
+                                  {i + 1}
+                                </span>
+                                <p className="text-[10px] text-black/65 font-['Inter:Regular',sans-serif] leading-[14px]">
+                                  {q}
+                                </p>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Photography spend */}
+                    <div className="rounded-[12px] border border-black/8 bg-[#FAFAFA] p-[14px] space-y-[12px]">
+                      <div>
+                        <FieldLabel hint="Common for vendors charging per shoot. Industry baseline: $15-$25/VIN.">
+                          Photography Cost Per VIN
+                        </FieldLabel>
+                        <div className="flex items-center h-[34px] bg-white rounded-[8px] px-[10px] border border-black/12 focus-within:border-[#4600F2] w-[150px]">
+                          <span className="text-[12px] text-black/50 font-semibold mr-[2px]">$</span>
+                          <input
+                            type="number"
+                            value={config.perVinCost}
+                            onChange={(e) => set("perVinCost", Number(e.target.value) || 0)}
+                            className="flex-1 bg-transparent outline-none text-[13px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] min-w-0"
+                          />
+                          <span className="text-[10px] text-black/35 ml-[2px]">/ car</span>
+                        </div>
+                        {config.perVinCost > 0 && (
+                          <p className="mt-[5px] text-[10px] text-black/40 font-['Inter:Regular',sans-serif]">
+                            At {config.totalInventory} units: est.{" "}
+                            <span className="font-semibold text-black/60">
+                              ${(config.perVinCost * config.totalInventory).toLocaleString()}/mo
+                            </span>
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-[8px]">
+                        <div className="flex-1 h-px bg-black/8" />
+                        <span className="text-[9px] font-bold uppercase tracking-[0.6px] text-black/30 font-['Inter:Bold',sans-serif]">
+                          or
+                        </span>
+                        <div className="flex-1 h-px bg-black/8" />
+                      </div>
+
+                      <div>
+                        <FieldLabel hint="Total monthly outlay including vendor fees, labour, and editing">
+                          Monthly Photography Spend
+                        </FieldLabel>
+                        <div className="flex flex-wrap gap-[6px]">
+                          {SPEND_OPTIONS.map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              onClick={() =>
+                                set(
+                                  "monthlyPhotographySpend",
+                                  config.monthlyPhotographySpend === opt ? "" : opt
+                                )
+                              }
+                              className={`h-[26px] px-[9px] rounded-full text-[10px] font-semibold border transition-colors font-['Inter:Semi_Bold',sans-serif] ${
+                                config.monthlyPhotographySpend === opt
+                                  ? "bg-[#4600F2] text-white border-[#4600F2]"
+                                  : "bg-white text-black/60 border-black/15 hover:border-[#4600F2]/40"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </SectionCard>
+              </div>
+
             </div>
 
-            {/* Discovery questions (collapsible) */}
-            <div data-fade>
+            {/* Continue CTA */}
+            <div data-fade className="mt-[20px]">
               <button
                 type="button"
-                onClick={() => setShowDiscovery((v) => !v)}
-                className="inline-flex items-center gap-[5px] text-[10px] font-semibold text-black/45 hover:text-[#4600F2] transition-colors font-['Inter:Semi_Bold',sans-serif]"
+                onClick={() => setStep(2)}
+                className="w-full h-[52px] rounded-[12px] text-white text-[15px] font-semibold font-['Inter:Semi_Bold',sans-serif] inline-flex items-center justify-center gap-[10px] transition-all hover:scale-[1.01] active:scale-[0.99]"
+                style={{
+                  background: "linear-gradient(90deg, #4600F2 0%, #B651D7 100%)",
+                  boxShadow: "0 8px 24px rgba(70,0,242,0.28)",
+                }}
               >
-                {showDiscovery ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-                {showDiscovery ? "Hide" : "Show"} discovery script
+                Continue to Opportunity Model
+                <ArrowRight size={16} strokeWidth={2.5} />
               </button>
-              {showDiscovery && (
-                <ol className="mt-[10px] space-y-[8px]">
-                  {DISCOVERY_QUESTIONS.map((q, i) => (
-                    <li key={i} className="flex gap-[8px]">
-                      <span className="shrink-0 size-[17px] rounded-full bg-[rgba(70,0,242,0.08)] text-[9px] font-bold text-[#4600F2] flex items-center justify-center mt-[1px] font-['Inter:Bold',sans-serif]">
-                        {i + 1}
-                      </span>
-                      <p className="text-[10px] text-black/65 font-['Inter:Regular',sans-serif] leading-[14px]">
-                        {q}
-                      </p>
-                    </li>
-                  ))}
-                </ol>
+              <p className="mt-[10px] text-center text-[11px] text-black/35 font-['Inter:Regular',sans-serif]">
+                Next: review the financial impact and launch the personalised demo
+              </p>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+          STEP 2 — Opportunity model
+      ══════════════════════════════════════════════════════════════════ */}
+      {step === 2 && (
+        <div ref={step2Ref} className="flex-1 overflow-auto">
+          <div className="max-w-[900px] mx-auto px-[28px] py-[24px]">
+
+            {/* Back nav + dealership name */}
+            <div data-fade className="flex items-center gap-[12px] mb-[22px]">
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="inline-flex items-center gap-[6px] text-[12px] font-semibold text-black/50 hover:text-[#4600F2] transition-colors font-['Inter:Semi_Bold',sans-serif]"
+              >
+                <ArrowLeft size={14} strokeWidth={2.5} />
+                Back to Discovery
+              </button>
+              <div className="flex-1 h-px bg-black/10" />
+              {config.dealershipName && (
+                <span className="text-[12px] font-bold text-[#4600F2] font-['Inter:Bold',sans-serif]">
+                  {config.dealershipName}
+                </span>
               )}
             </div>
-          </PanelSection>
-        </div>
-
-        {/* ── RIGHT: Opportunity model ──────────────────────────────────── */}
-        <div className="flex-1 overflow-auto">
-          <div className="px-[28px] py-[20px] max-w-[900px]">
 
             {/* ── Stat boxes (summary) ─── */}
             {(() => {
-              const turnRate = config.totalInventory > 0
-                ? config.monthlySalesVolume / config.totalInventory
-                : 0;
+              const turnRate =
+                config.totalInventory > 0
+                  ? config.monthlySalesVolume / config.totalInventory
+                  : 0;
               const turnVariant: "accent" | "warn" | "alert" =
                 turnRate >= 1.4 ? "accent" : turnRate >= 0.8 ? "warn" : "alert";
               const turnSub =
@@ -621,7 +770,9 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                   />
                   <StatBox
                     label="Est. Monthly Gap"
-                    value={`$${opp.totalMonthly.toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+                    value={`$${opp.totalMonthly.toLocaleString("en-US", {
+                      maximumFractionDigits: 0,
+                    })}`}
                     sub="across all three cost buckets"
                     variant="alert"
                   />
@@ -634,7 +785,6 @@ export function DemoSetupScreen({ onLaunch }: Props) {
               <SectionHeading>Financial Inputs</SectionHeading>
               <div className="bg-white rounded-[14px] border border-black/8 p-[16px] space-y-[16px]">
 
-                {/* Monthly Sales Volume slider */}
                 <Slider
                   label="Monthly Sales Volume"
                   value={config.monthlySalesVolume}
@@ -648,7 +798,6 @@ export function DemoSetupScreen({ onLaunch }: Props) {
 
                 <div className="border-t border-black/6" />
 
-                {/* Holding cost chips */}
                 <div>
                   <FieldLabel hint="Industry range: $40-$50/car/day. Mid-volume store benchmark: $46.44 (playbook 5-step formula)">
                     Holding Cost / Day
@@ -674,7 +823,9 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                         <input
                           type="number"
                           value={config.holdingCostPerDay}
-                          onChange={(e) => set("holdingCostPerDay", Number(e.target.value) || 0)}
+                          onChange={(e) =>
+                            set("holdingCostPerDay", Number(e.target.value) || 0)
+                          }
                           className="w-[48px] bg-transparent outline-none text-[13px] font-bold text-[#4600F2] font-['Inter:Bold',sans-serif]"
                         />
                         <span className="text-[10px] text-[#4600F2]/60 ml-[2px]">/day</span>
@@ -682,7 +833,9 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                     )}
                   </div>
                   <p className="mt-[6px] text-[10px] text-black/40 font-['Inter:Regular',sans-serif]">
-                    40 cars x 10 extra days = ${(40 * 10 * config.holdingCostPerDay).toLocaleString()} in avoidable holding cost
+                    40 cars &times; 10 extra days = $
+                    {(40 * 10 * config.holdingCostPerDay).toLocaleString()} in avoidable holding
+                    cost
                   </p>
                 </div>
               </div>
@@ -703,7 +856,7 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                   sub={
                     config.monthlyPhotographySpend
                       ? `Current monthly spend: ${config.monthlyPhotographySpend}`
-                      : `$${config.perVinCost}/car x ${config.totalInventory} units on lot`
+                      : `$${config.perVinCost}/car × ${config.totalInventory} units on lot`
                   }
                   accent="#0891B2"
                 />
@@ -711,7 +864,7 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                   icon={<Clock size={14} strokeWidth={2.5} />}
                   label="Frontline Gap Cost"
                   value={`$${Math.round(opp.frontlineMonthly / 1000)}K`}
-                  sub={`${opp.frontlineGapDays} days above 1-day target x $${config.holdingCostPerDay}/day x ${config.monthlySalesVolume} units`}
+                  sub={`${opp.frontlineGapDays} days above 1-day target × $${config.holdingCostPerDay}/day × ${config.monthlySalesVolume} units`}
                   accent="#F59E0B"
                 />
                 <ImpactCard
@@ -724,7 +877,7 @@ export function DemoSetupScreen({ onLaunch }: Props) {
               </div>
             </div>
 
-            {/* ── Section C: How the gap is calculated (collapsible) ─── */}
+            {/* ── Section C: Calculation breakdown (collapsible) ─── */}
             <div data-fade className="mb-[20px]">
               <button
                 type="button"
@@ -745,21 +898,21 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                   {[
                     {
                       label: "Media Gap",
-                      detail: `${opp.vehiclesNoPhotos} vehicles x $220/wk x 4 weeks`,
+                      detail: `${opp.vehiclesNoPhotos} vehicles × $220/wk × 4 weeks`,
                       sub: `Est. ${opp.pctWithoutPhotos}% without photos based on photography process`,
                       value: opp.mediaGapMonthly,
                       color: "#EF4444",
                     },
                     {
                       label: "Frontline Gap",
-                      detail: `${opp.frontlineGapDays} extra days x $${config.holdingCostPerDay} x ${config.monthlySalesVolume} units`,
+                      detail: `${opp.frontlineGapDays} extra days × $${config.holdingCostPerDay} × ${config.monthlySalesVolume} units`,
                       sub: "Days above Studio AI 1-day target",
                       value: opp.frontlineMonthly,
                       color: "#F59E0B",
                     },
                     {
                       label: "Aged Inventory (45+ days)",
-                      detail: `${opp.agedVehicles} vehicles x $${config.holdingCostPerDay}/day x 30 days`,
+                      detail: `${opp.agedVehicles} vehicles × $${config.holdingCostPerDay}/day × 30 days`,
                       sub: "~15% of lot beyond the break-even threshold",
                       value: opp.agedMonthly,
                       color: "#4600F2",
@@ -782,10 +935,7 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                       </div>
                       <span
                         className="font-bold font-['Inter:Bold',sans-serif] text-[14px] shrink-0 ml-[16px] px-[10px] py-[4px] rounded-[8px]"
-                        style={{
-                          color: row.color,
-                          background: `${row.color}10`,
-                        }}
+                        style={{ color: row.color, background: `${row.color}10` }}
                       >
                         ${row.value.toLocaleString("en-US", { maximumFractionDigits: 0 })}
                       </span>
@@ -816,9 +966,9 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                   What Studio AI closes
                 </p>
                 <p className="text-[14px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif]">
-                  Fills {opp.vehiclesNoPhotos} photo gaps overnight.
-                  Frontline drops from {opp.currentDaysToFrontline} days to 1 day.
-                  Smart Campaigns auto-target {opp.agedVehicles} aged units.
+                  Fills {opp.vehiclesNoPhotos} photo gaps overnight. Frontline drops from{" "}
+                  {opp.currentDaysToFrontline} days to 1 day. Smart Campaigns auto-target{" "}
+                  {opp.agedVehicles} aged units.
                 </p>
               </div>
               <div className="shrink-0 text-right">
@@ -838,7 +988,8 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                 onClick={() => onLaunch(config)}
                 className="w-full h-[52px] rounded-[12px] text-white text-[15px] font-semibold font-['Inter:Semi_Bold',sans-serif] inline-flex items-center justify-center gap-[10px] transition-all hover:scale-[1.01] active:scale-[0.99]"
                 style={{
-                  background: "linear-gradient(90deg, #FF5C7A 0%, #B651D7 50%, #4600F2 100%)",
+                  background:
+                    "linear-gradient(90deg, #FF5C7A 0%, #B651D7 50%, #4600F2 100%)",
                   boxShadow: "0 8px 20px rgba(70,0,242,0.28)",
                 }}
               >
@@ -859,7 +1010,8 @@ export function DemoSetupScreen({ onLaunch }: Props) {
 
           </div>
         </div>
-      </div>
+      )}
+
     </div>
   );
 }
