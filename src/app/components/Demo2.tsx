@@ -1062,10 +1062,10 @@ function ageToDate(daysAgo: number): string {
 const BUCKET_ORDER: BucketKey[] = ["raw", "nophoto", "cgi", "unsyndicated", "aging"];
 
 const NEXT_BUCKET_LABELS: Record<BucketKey, string> = {
-  raw:          "Studio AI",
-  nophoto:      "Smart Match",
-  cgi:          "CGI Upgrade",
-  unsyndicated: "Syndication",
+  raw:          "Fix no-photo listings",
+  nophoto:      "Fix stock photo listings",
+  cgi:          "Publish across platforms",
+  unsyndicated: "Fix aged inventory",
   aging:        "Smart Campaigns",
 };
 
@@ -1404,7 +1404,7 @@ export function Demo2({ demoConfig }: Demo2Props) {
         let onAction: () => void;
         if (isActiveCompleted) {
           if (nextBucket) {
-            label = `Next up: ${NEXT_BUCKET_LABELS[nextBucket]}`;
+            label = NEXT_BUCKET_LABELS[nextBucket];
             onAction = () => { setActiveBucket(nextBucket); setPitchOpen(true); };
           } else {
             label = "Inventory is sale-ready — close";
