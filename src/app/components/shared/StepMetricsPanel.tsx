@@ -215,8 +215,10 @@ export function StepMetricsPanel({
     const delta = hc[0] - hc[afterIdx];
     metricLabel  = "Gross Margin at Risk";
     beforeVal    = fmtK(hc[0]);
-    afterVal     = fmtK(hc[afterIdx]);
-    deltaDisplay = `+${fmtK(delta)} recovered`;
+    afterVal     = bucketKey === "nophoto" ? "$0" : fmtK(hc[afterIdx]);
+    deltaDisplay = bucketKey === "nophoto"
+      ? `+${fmtK(hc[0])} recovered`
+      : `+${fmtK(delta)} recovered`;
 
   } else if (bucketKey === "unsyndicated") {
     const ttmBefore = dtf[0];
@@ -234,7 +236,7 @@ export function StepMetricsPanel({
     // costAfter  = agedVehicles x holdingCostPerDay x 20d (30d - 10d saved)
     const costBefore = opp.agedMonthly;
     const costAfter  = Math.round(costBefore * (20 / 30));
-    metricLabel  = "Gross Margin at Risk";
+    metricLabel  = "Gross Margin Saved";
     beforeVal    = fmtK(costBefore);
     afterVal     = fmtK(costAfter);
     deltaDisplay = `+${fmtK(costBefore - costAfter)} recovered`;
@@ -256,20 +258,54 @@ export function StepMetricsPanel({
 
   return (
     <div className="space-y-[16px]">
-      <BeforeAfterBlock
-        label={metricLabel}
-        beforeVal={beforeVal}
-        afterVal={afterVal}
-        deltaDisplay={deltaDisplay}
-        deltaColor={deltaColor}
-        deltaBg={deltaBg}
-        blockRef={blockRef}
-      />
-      <ImpactBullets
-        bullets={STEP_BULLETS[bucketKey]}
-        accent={accent}
-        bulletsRef={bulletsRef}
-      />
+      {bucketKey === "aging" ? (
+        <div ref={blockRef}>
+          <p className="text-[10px] font-semibold uppercase tracking-[1.2px] text-black/40 mb-[10px] font-['Inter',sans-serif]">
+            {metricLabel}
+          </p>
+          <div
+            className="rounded-[12px] px-[18px] py-[14px] flex flex-col items-center justify-center text-center"
+            style={{ background: `${accent}12`, border: `1.5px solid ${accent}30` }}
+          >
+            <p
+              className="text-[22px] font-extrabold leading-none font-['Inter',sans-serif]"
+              style={{ color: accent }}
+            >
+              {fmtK(opp.agedMonthly - Math.round(opp.agedMonthly * (20 / 30)))}
+            </p>
+            <p className="text-[11px] font-semibold text-[#374151] mt-[5px] font-['Inter',sans-serif]">
+              recovered per month
+            </p>
+          </div>
+        </div>
+      ) : bucketKey === "raw" ? (
+        <div ref={blockRef}>
+          <div
+            className="rounded-[12px] px-[18px] py-[14px] flex flex-col items-center justify-center text-center"
+            style={{ background: `${accent}12`, border: `1.5px solid ${accent}30` }}
+          >
+            <p
+              className="text-[22px] font-extrabold leading-none font-['Inter',sans-serif]"
+              style={{ color: accent }}
+            >
+              30%+
+            </p>
+            <p className="text-[11px] font-semibold text-[#374151] mt-[5px] font-['Inter',sans-serif]">
+              more leads per listing
+            </p>
+          </div>
+        </div>
+      ) : (
+        <BeforeAfterBlock
+          label={metricLabel}
+          beforeVal={beforeVal}
+          afterVal={afterVal}
+          deltaDisplay={deltaDisplay}
+          deltaColor={deltaColor}
+          deltaBg={deltaBg}
+          blockRef={blockRef}
+        />
+      )}
     </div>
   );
 }

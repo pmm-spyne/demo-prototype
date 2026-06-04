@@ -650,17 +650,17 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problem:
       "Raw lot photos have mixed backgrounds, patchy lighting, and no 360 or video. Buyers scroll past listings that look like they were shot in a hurry.",
     problemChips: [
-      "Photography Costs",
-      "Low Converting Media",
       "Inconsistent VDPs",
+      "Low Converting Media",
+      "Merchandising Cost",
     ],
     solutionSection: {
       title: "The Solution",
       boxes: [
         {
-          icon: <Smartphone size={14} strokeWidth={2} />,
-          label: "Guided App Shoots",
-          body: "Staff shoot with the Studio AI app, cutting out photography spend",
+          icon: <Palette size={14} strokeWidth={2} />,
+          label: "Consistent Branding",
+          body: "Applies consistent branded environments across every listing",
         },
         {
           icon: <Monitor size={14} strokeWidth={2} />,
@@ -668,9 +668,9 @@ const PITCHES: Record<BucketKey, PitchContent> = {
           body: "Creates studio-quality visuals that drive higher VDP engagement",
         },
         {
-          icon: <Palette size={14} strokeWidth={2} />,
-          label: "Dealer Branding",
-          body: "Applies consistent branded environments across your inventory",
+          icon: <Smartphone size={14} strokeWidth={2} />,
+          label: "Self-serve App",
+          body: "Shoot studio-grade photos with the app, cutting training costs and reshoots",
         },
       ],
     },
@@ -693,35 +693,35 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problem:
       "The vehicle is acquired but the shoot is pending or it has not hit your lot yet. Every day your listing sits dark, buyers are clicking the competition while holding cost eats at your margin.",
     problemChips: [
-      "Pre-Arrival Gap",
-      "Shoot Delays",
-      "Repetitive Merch Costs",
+      "Lower Margins",
+      "Listing Delays",
+      "Photography Costs",
     ],
     solutionSection: {
       title: "The Solution",
       boxes: [
         {
           icon: <Search size={14} strokeWidth={2} />,
-          label: "Smart VIN Match",
-          body: "Matched by spec and color, cloning studio assets automatically",
+          label: "Find Identical VIN",
+          body: "Matched by spec and color, reusing studio assets automatically",
         },
         {
           icon: <Rocket size={14} strokeWidth={2} />,
-          label: "Instant TTM",
-          body: "Publishes in seconds, capturing demand from day of acquisition",
+          label: "Instant Time-to-Market",
+          body: "Publishes in seconds, capturing demand and cutting holding costs",
         },
         {
           icon: <Building2 size={14} strokeWidth={2} />,
-          label: "Group Asset Library",
-          body: "Assets shot once are shared instantly across every rooftop",
+          label: "No-Shoot Listings",
+          body: "Newly acquired cars go live instantly using matched assets",
         },
       ],
     },
     bullets: [
-      "New car acquired",
-      "Enter VIN or import from IMS",
+      "Car acquired",
+      "Search VIN",
       "Matching VIN found",
-      "Go live with studio grade assets",
+      "Go live instantly",
     ],
     bulletStyle: "nodes",
     heroNode: <SmartMatchScanHero />,
@@ -785,9 +785,9 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problem:
       "Your vehicles are listing-ready but visibility stops at your website. Buyers searching AutoTrader, Cars.com, and KBB never see them. Every day a car sits off-marketplace is another day holding cost compounds with zero buyer reach.",
     problemChips: [
-      "Zero Off-Site Visibility",
+      "Poor Coverage",
       "Manual Publishing",
-      "Vendor Bottlenecks",
+      "Time-Consuming Process",
     ],
     solutionSection: {
       title: "The Solution",
@@ -795,7 +795,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         {
           icon: <Globe size={14} strokeWidth={2} />,
           label: "Instant Multi-Platform Reach",
-          body: "Publishes across popular marketplaces and social channels with one click",
+          body: "Publishes across 100+ popular marketplaces and social channels",
         },
         {
           icon: <Wand2 size={14} strokeWidth={2} />,
@@ -804,14 +804,14 @@ const PITCHES: Record<BucketKey, PitchContent> = {
         },
         {
           icon: <Send size={14} strokeWidth={2} />,
-          label: "Unlimited Throughput",
-          body: "No vendor bottlenecks, publish your full inventory at any scale",
+          label: "One-Click Publish",
+          body: "No logging into multiple platforms. Publish your inventory at scale with one click",
         },
       ],
     },
     bullets: [
-      "Select listings to syndicate",
-      "Pick your marketplaces",
+      "Select listings to publish",
+      "Pick your platforms",
       "One-click publish",
       "Track listing health",
     ],
@@ -828,35 +828,35 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     problem:
       "Dealership campaigns are fragmented, manual, and easy to miss. Promotions expire unnoticed, aged inventory looks identical to fresh arrivals, and every deal becomes a price negotiation when your value goes unseen.",
     problemChips: [
+      "Aging Inventory",
       "Manual Promotions",
-      "Aged Inventory Invisible",
-      "Competing on Price Alone",
+      "Poor Marketing",
     ],
     solutionSection: {
       title: "The Solution",
       boxes: [
         {
-          icon: <Sparkles size={14} strokeWidth={2} />,
-          label: "Automated Visual Promotions",
-          body: "Applies overlays and dynamic text to your inventory automatically",
-        },
-        {
           icon: <Timer size={14} strokeWidth={2} />,
           label: "Aged Inventory Targeting",
-          body: "Identifies listings past 30 days and applies a visual urgency push automatically",
+          body: "Identify and run campaigns on aged inventory to move units faster",
+        },
+        {
+          icon: <Sparkles size={14} strokeWidth={2} />,
+          label: "Run Promotions on Autopilot",
+          body: "Set automations to run different campaign types at scale",
         },
         {
           icon: <Building2 size={14} strokeWidth={2} />,
-          label: "Dynamic Offer Overlays",
-          body: "Shows your full value upfront before a buyer reaches the price",
+          label: "Value-First Offer Overlays",
+          body: "Show your vehicle value upfront before a buyer ever reaches the price",
         },
       ],
     },
     bullets: [
-      "Set up your creatives",
-      "Build campaign rules",
-      "Preview per VIN",
-      "Launch and run automatically",
+      "Identify VINs",
+      "Set Creatives",
+      "Preview Campaign",
+      "Publish",
     ],
     bulletStyle: "nodes",
     heroNode: <SmartCampaignsHero />,
