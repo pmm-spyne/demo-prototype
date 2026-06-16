@@ -9,12 +9,15 @@ import type { StudioTier } from "../types/demoConfig";
 export interface OverviewPanelProps {
   dealerName?: string;
   tier: StudioTier;
+  /** True once the customer has activated the free 30-day Pro trial. */
+  trialActive: boolean;
+  /** Fired when the customer clicks "Start free trial" or an upgrade CTA. */
   onUpgrade: () => void;
-  /** Demo affordance — simulate the trial lapsing into the degraded console. */
+  /** Demo affordance: simulate the trial lapsing into the degraded console. */
   onExpire?: () => void;
-  /** Days remaining in the 30-day Studio OS trial. */
+  /** Days remaining in the 30-day Studio OS Pro trial (only shown when trialActive). */
   trialDaysLeft: number;
-  /** Buckets resolved so far (0–5) — drives the activation progress bar. */
+  /** Buckets resolved so far (0-5) — drives the activation progress bar. */
   completedCount: number;
   totalSteps: number;
   /** Days-to-frontline before Studio OS vs. now. */
@@ -26,7 +29,7 @@ export interface OverviewPanelProps {
   totalValueMonthly: number;
   /** VDP engagement uplift % (Studio Frame). */
   vdpUplift: number;
-  /** True while Studio Promote is gated behind Pro. */
+  /** True while Studio Promote is gated behind Pro (kept for backward compat). */
   promoteLocked: boolean;
 }
 
@@ -81,15 +84,17 @@ interface ProductRow {
 }
 
 export function OverviewPanel({
-  dealerName, tier, onUpgrade, onExpire, trialDaysLeft,
+  dealerName, tier, trialActive, onUpgrade, onExpire, trialDaysLeft,
   completedCount, totalSteps,
   dtfBaseline, dtfCurrent,
   holdingSavedMonthly, photographySavedMonthly, totalValueMonthly,
-  vdpUplift, promoteLocked,
+  vdpUplift,
 }: OverviewPanelProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const totalValue = useCountUp(totalValueMonthly);
   const tatSaved = Math.max(0, dtfBaseline - dtfCurrent);
+  // Pro features (Publish + Promote) are locked until the trial is activated
+  const proLocked = !trialActive && tier !== "pro";
 
   useEffect(() => {
     const root = rootRef.current;
@@ -100,14 +105,14 @@ export function OverviewPanel({
   }, []);
 
   const products: ProductRow[] = [
-    { icon: <Zap size={16} strokeWidth={2.2} />,      name: "Studio Instant", metric: "0 → 4 min", caption: "Day-0 listings live before the shoot",    accent: "#7F6AF2" },
-    { icon: <Camera size={16} strokeWidth={2.2} />,   name: "Studio Create",  metric: "+4.9 score", caption: "Lot photos elevated to studio grade",      accent: "#E91E63" },
-    { icon: <Send size={16} strokeWidth={2.2} />,     name: "Studio Publish", metric: "6 channels", caption: "Listings live across every marketplace",   accent: "#4600F2" },
-    { icon: <Megaphone size={16} strokeWidth={2.2} />, name: "Studio Promote", metric: promoteLocked ? "Pro" : "−17d on lot", caption: promoteLocked ? "Age-triggered promotions — unlock with Pro" : "Aged units moved with auto promotions", accent: "#DC2626", locked: promoteLocked },
+    { icon: <Zap size={16} strokeWidth={2.2} />,       name: "Studio Instant", metric: "0 to 4 min",  caption: "Day-0 listings live before the shoot",           accent: "#7F6AF2" },
+    { icon: <Camera size={16} strokeWidth={2.2} />,    name: "Studio Create",  metric: "+4.9 score",  caption: "Lot photos elevated to studio grade",             accent: "#E91E63" },
+    { icon: <Send size={16} strokeWidth={2.2} />,      name: "Studio Publish", metric: proLocked ? "Pro" : "6 channels", caption: proLocked ? "Marketplace and social publishing — start your trial to unlock" : "Listings live across every marketplace", accent: "#4600F2", locked: proLocked },
+    { icon: <Megaphone size={16} strokeWidth={2.2} />, name: "Studio Promote", metric: proLocked ? "Pro" : "-17d on lot", caption: proLocked ? "Age-triggered campaigns — start your trial to unlock"            : "Aged units moved with auto promotions",  accent: "#DC2626", locked: proLocked },
   ];
 
   const benefits = [
-    "Every new acquisition listed on Day 0 — no dark listings",
+    "Every new acquisition listed on Day 0. No dark listings.",
     "Consistent, studio-grade media across all rooftops",
     "One-click syndication keeps marketplaces always in sync",
     "Holding cost trending down week over week",
@@ -116,43 +121,65 @@ export function OverviewPanel({
 
   return (
     <div ref={rootRef} className="flex flex-col gap-[16px]">
-      {/* Trial banner */}
-      <div
-        data-fade
-        className="flex items-center justify-between gap-[16px] rounded-[12px] px-[16px] py-[11px] border"
-        style={{ background: "rgba(70,0,242,0.05)", borderColor: "rgba(70,0,242,0.16)" }}
-      >
-        <div className="flex items-center gap-[10px] min-w-0">
-          <span className="size-[30px] rounded-full bg-[#4600F2] flex items-center justify-center text-white shrink-0">
-            <Clock size={15} strokeWidth={2.4} />
-          </span>
-          <p className="text-[12.5px] text-[#402387] font-['Inter:Regular',sans-serif] leading-snug">
-            <span className="font-bold font-['Inter:Bold',sans-serif]">{trialDaysLeft} days left</span> in your free Studio OS trial.
-            {tier === "lite" ? " Upgrade to Pro to keep Studio Promote running." : " You're on Studio OS Pro."}
-          </p>
+      {/* Trial banner: changes based on whether the trial has been activated */}
+      {proLocked ? (
+        /* Pre-trial: prompt the customer to start their free 30-day Pro trial */
+        <div
+          data-fade
+          className="flex items-center justify-between gap-[16px] rounded-[12px] px-[16px] py-[12px] border"
+          style={{ background: "linear-gradient(90deg,rgba(70,0,242,0.06),rgba(182,81,215,0.06))", borderColor: "rgba(70,0,242,0.18)" }}
+        >
+          <div className="flex items-center gap-[10px] min-w-0">
+            <span className="size-[32px] rounded-full flex items-center justify-center text-white shrink-0" style={{ background: "linear-gradient(135deg,#4600F2,#B651D7)" }}>
+              <Sparkles size={15} strokeWidth={2.4} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-[13px] font-bold text-[#1E0A5E] font-['Inter:Bold',sans-serif]">
+                Studio OS Pro trial available
+              </p>
+              <p className="text-[11.5px] text-[#402387] font-['Inter:Regular',sans-serif] mt-[1px]">
+                Unlock Studio Publish and Studio Promote free for 30 days. No credit card required.
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onUpgrade}
+            className="inline-flex items-center gap-[6px] h-[36px] px-[16px] rounded-[8px] text-[12.5px] font-bold text-white font-['Inter:Bold',sans-serif] transition-transform hover:scale-[1.02] shrink-0"
+            style={{ background: "linear-gradient(90deg,#4600F2,#B651D7)", boxShadow: "0 6px 18px rgba(182,81,215,0.35)" }}
+          >
+            <Sparkles size={13} strokeWidth={2.6} /> Start free trial
+          </button>
         </div>
-        <div className="flex items-center gap-[12px] shrink-0">
-          {onExpire && (
-            <button
-              type="button"
-              onClick={onExpire}
-              className="text-[11.5px] font-semibold text-black/40 hover:text-[#DC2626] underline underline-offset-2 font-['Inter:Semi_Bold',sans-serif] transition-colors"
-            >
-              Preview trial end
-            </button>
-          )}
-          {tier === "lite" && (
-            <button
-              type="button"
-              onClick={onUpgrade}
-              className="inline-flex items-center gap-[6px] h-[34px] px-[14px] rounded-[8px] text-[12px] font-bold text-white font-['Inter:Bold',sans-serif] transition-transform hover:scale-[1.02]"
-              style={{ background: "linear-gradient(90deg,#4600F2,#B651D7)", boxShadow: "0 6px 18px rgba(182,81,215,0.35)" }}
-            >
-              <Sparkles size={13} strokeWidth={2.6} /> Upgrade to Pro
-            </button>
-          )}
+      ) : (
+        /* Trial or Pro active: show days remaining */
+        <div
+          data-fade
+          className="flex items-center justify-between gap-[16px] rounded-[12px] px-[16px] py-[11px] border"
+          style={{ background: "rgba(70,0,242,0.05)", borderColor: "rgba(70,0,242,0.16)" }}
+        >
+          <div className="flex items-center gap-[10px] min-w-0">
+            <span className="size-[30px] rounded-full bg-[#4600F2] flex items-center justify-center text-white shrink-0">
+              <Clock size={15} strokeWidth={2.4} />
+            </span>
+            <p className="text-[12.5px] text-[#402387] font-['Inter:Regular',sans-serif] leading-snug">
+              <span className="font-bold font-['Inter:Bold',sans-serif]">{trialDaysLeft} days left</span> in your free Studio OS Pro trial.
+              {tier !== "pro" ? " Upgrade to keep Pro features after the trial ends." : " You are on Studio OS Pro."}
+            </p>
+          </div>
+          <div className="flex items-center gap-[12px] shrink-0">
+            {onExpire && (
+              <button
+                type="button"
+                onClick={onExpire}
+                className="text-[11.5px] font-semibold text-black/40 hover:text-[#DC2626] underline underline-offset-2 font-['Inter:Semi_Bold',sans-serif] transition-colors"
+              >
+                Preview trial end
+              </button>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Value hero */}
       <div
@@ -262,14 +289,14 @@ export function OverviewPanel({
               </div>
             ))}
           </div>
-          {promoteLocked && (
+          {proLocked && (
             <button
               type="button"
               onClick={onUpgrade}
               className="mt-[16px] w-full inline-flex items-center justify-center gap-[7px] h-[40px] rounded-[10px] text-[13px] font-bold text-white font-['Inter:Bold',sans-serif] transition-transform hover:scale-[1.01]"
               style={{ background: "linear-gradient(90deg,#4600F2,#B651D7)", boxShadow: "0 8px 22px rgba(182,81,215,0.32)" }}
             >
-              <Sparkles size={14} strokeWidth={2.6} /> Unlock Studio Promote with Pro <ArrowRight size={14} />
+              <Sparkles size={14} strokeWidth={2.6} /> Start free 30-day Pro trial <ArrowRight size={14} />
             </button>
           )}
         </div>

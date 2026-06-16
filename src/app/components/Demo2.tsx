@@ -15,633 +15,23 @@ import { SmartCampaignModal } from "./SmartCampaignModal";
 import { PublishModal } from "./PublishModal";
 import type { Row } from "./shared/VehicleRow";
 import { PLATFORMS } from "./publishPlatforms";
-import imgCampaigns from "../assets/smart-campaigns-example.png";
-import imgRawExterior from "../assets/vehicle/raw-exterior-1.jpg";
-import imgStudioExterior from "../assets/vehicle/studio-exterior-1.jpg";
-import imgCgiFront from "../assets/vehicle/cgi-front.jpg";
-import imgCgiTransformed from "../assets/vehicle/cgi-transformed-front.jpg";
-import { ImageOff } from "lucide-react";
 import { calcOpportunity, DEFAULT_DEMO_CONFIG, type DemoConfig, type StudioTier } from "../types/demoConfig";
 import { OverviewPanel } from "./OverviewPanel";
 import { UnboxingScreen } from "./UnboxingScreen";
 import { ExpiredConsoleScreen } from "./ExpiredConsoleScreen";
+import { ProductTour, type TourStep } from "./shared/ProductTour";
 import confetti from "canvas-confetti";
 
-// ─── SmartMatch scan animation ────────────────────────────────────────────────
-// Shows a blank placeholder with a VIN number, then a purple scan line sweeps
-// left→right and the matched car image reveals — same 16/9 ratio as RawScanHero.
-const SMART_MATCH_CSS = `
-@keyframes smReveal {
-  0%, 12%   { clip-path: inset(0 100% 0 0); }
-  58%, 100% { clip-path: inset(0 0% 0 0); }
-}
-@keyframes smScanLine {
-  0%, 12%   { left: 0%; opacity: 1; }
-  58%       { left: 100%; opacity: 0; }
-  62%       { left: 0%; opacity: 0; }
-  70%, 100% { left: 0%; opacity: 0; }
-}
-@keyframes smScanPulse {
-  0%, 100% { box-shadow: 0 0 8px 3px rgba(127,106,242,0.55), 0 0 22px 6px rgba(127,106,242,0.22); }
-  50%      { box-shadow: 0 0 14px 5px rgba(127,106,242,0.85), 0 0 34px 10px rgba(127,106,242,0.42); }
-}
-@keyframes smVinGlow {
-  0%, 8%    { color: rgba(156,163,175,0.6); text-shadow: none; }
-  28%, 48%  { color: rgba(167,139,250,1); text-shadow: 0 0 20px rgba(127,106,242,0.8), 0 0 40px rgba(127,106,242,0.4); }
-  62%, 100% { color: rgba(255,255,255,0.85); text-shadow: none; }
-}
-@keyframes smFoundBadge {
-  0%, 42%   { opacity: 0; transform: scale(0.85); }
-  58%, 100% { opacity: 1; transform: scale(1); }
-}
-`;
+// ─── Product pitch hero GIFs ───────────────────────────────────────────────────
+const GIF_STUDIO_CREATE =
+  "https://spyne-static.s3.us-east-1.amazonaws.com/production-website/studio-product-releases/public/product/studio-ai/Product-feature-gifs/Smart+Shoot.gif";
+const GIF_STUDIO_INSTANT =
+  "https://spyne-static.s3.us-east-1.amazonaws.com/production-website/studio-product-releases/public/product/studio-ai/Product-feature-gifs/Smart+Match.gif";
+const GIF_STUDIO_PUBLISH =
+  "https://spyne-static.s3.us-east-1.amazonaws.com/production-website/studio-product-releases/public/product/studio-ai/Product-feature-gifs/Smart+Syndication.gif";
+const GIF_STUDIO_PROMOTE =
+  "https://spyne-static.s3.us-east-1.amazonaws.com/production-website/studio-product-releases/public/product/studio-ai/Campaigndash+(2).gif";
 
-function SmartMatchScanHero() {
-  return (
-    <>
-      <style>{SMART_MATCH_CSS}</style>
-      <div
-        className="relative w-full overflow-hidden rounded-[14px] border border-black/8 bg-[#111318]"
-        style={{ aspectRatio: "16/9" }}
-      >
-        {/* Base layer: "No Photo" placeholder with VIN number */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center gap-[14px]">
-          <ImageOff size={36} className="text-white/20" strokeWidth={1.5} />
-          <div
-            className="font-mono text-[13px] font-bold tracking-[3px] uppercase px-[12px] py-[6px] rounded-[6px] border border-white/10 bg-white/5"
-            style={{
-              animation: "smVinGlow 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite",
-              color: "rgba(156,163,175,0.6)",
-            }}
-          >
-            VIN5N1AT3CBXSC
-          </div>
-        </div>
-
-        {/* Reveal layer: matched car image */}
-        <div
-          className="absolute inset-0"
-          style={{ animation: "smReveal 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite" }}
-        >
-          <img
-            src={imgStudioExterior}
-            alt="Matched media"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Glowing purple scan line */}
-        <div
-          className="absolute inset-y-0 w-[2px]"
-          style={{
-            background:
-              "linear-gradient(180deg, transparent 0%, #7F6AF2 18%, #B651D7 50%, #7F6AF2 82%, transparent 100%)",
-            animation:
-              "smScanLine 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite, smScanPulse 1.1s ease-in-out infinite",
-          }}
-        />
-
-        {/* Top-left: scanning status */}
-        <div className="absolute top-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
-          <span className="size-[5px] rounded-full bg-[#A78BFA] animate-pulse" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
-            Scanning VIN
-          </span>
-        </div>
-
-        {/* Top-right: VIN Found badge (appears after scan) */}
-        <div
-          className="absolute top-[10px] right-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px]"
-          style={{
-            background: "rgba(127,106,242,0.82)",
-            backdropFilter: "blur(4px)",
-            animation: "smFoundBadge 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite",
-          }}
-        >
-          <span className="size-[5px] rounded-full bg-white" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
-            VIN Found
-          </span>
-        </div>
-
-        {/* Bottom-left: No photo yet */}
-        <div className="absolute bottom-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
-          <span className="size-[5px] rounded-full bg-[#9CA3AF]" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-[#D1D5DB] font-['Inter:Bold',sans-serif]">
-            No photo yet
-          </span>
-        </div>
-
-        {/* Bottom-right: Matched media badge (appears after scan) */}
-        <div
-          className="absolute bottom-[10px] right-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px]"
-          style={{
-            background: "rgba(127,106,242,0.82)",
-            backdropFilter: "blur(4px)",
-            animation: "smFoundBadge 4.5s cubic-bezier(0.45,0,0.55,1) 0.5s infinite",
-          }}
-        >
-          <span className="size-[5px] rounded-full bg-white" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
-            Matched media
-          </span>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── Stock photo grid animation ──────────────────────────────────────────────
-// 3×2 grid of inconsistent stock photo cards — each sweeps through a purple
-// scan line and reveals a clean, uniform Studio AI output.
-const STOCK_GRID_CSS = `
-@keyframes sgReveal {
-  0%, 12%   { clip-path: inset(0 100% 0 0); }
-  58%, 100% { clip-path: inset(0 0% 0 0); }
-}
-@keyframes sgScanLine {
-  0%, 12%   { left: 0%; opacity: 1; }
-  58%       { left: 100%; opacity: 0; }
-  60%       { left: 0%; opacity: 0; }
-  68%, 100% { left: 0%; opacity: 0; }
-}
-@keyframes sgScanPulse {
-  0%, 100% { box-shadow: 0 0 6px 2px rgba(124,58,237,0.6), 0 0 16px 5px rgba(124,58,237,0.2); }
-  50%      { box-shadow: 0 0 10px 4px rgba(124,58,237,0.9), 0 0 26px 8px rgba(124,58,237,0.4); }
-}
-@keyframes sgBadgeFade {
-  0%, 52%   { opacity: 0; transform: scale(0.8); }
-  68%, 100% { opacity: 1; transform: scale(1); }
-}
-@keyframes sgLabelFade {
-  0%, 48%   { opacity: 1; }
-  62%, 100% { opacity: 0; }
-}
-`;
-
-function StockPhotoGridHero() {
-  const DURATION = "5s";
-  const cards = [
-    { delay: "0s",     before: imgCgiFront,    after: imgCgiTransformed,  filter: "hue-rotate(25deg) brightness(1.15)",   issue: "Watermark"    },
-    { delay: "0.55s",  before: imgRawExterior, after: imgStudioExterior,  filter: "grayscale(0.35) contrast(1.1)",        issue: "Off-brand"    },
-    { delay: "1.1s",   before: imgCgiFront,    after: imgCgiTransformed,  filter: "sepia(0.3) brightness(1.05)",          issue: "Poor crop"    },
-    { delay: "1.65s",  before: imgRawExterior, after: imgStudioExterior,  filter: "hue-rotate(-18deg) saturate(1.35)",    issue: "Different BG" },
-    { delay: "2.2s",   before: imgCgiFront,    after: imgCgiTransformed,  filter: "brightness(1.22) contrast(1.12)",      issue: "Inconsistent" },
-    { delay: "2.75s",  before: imgRawExterior, after: imgStudioExterior,  filter: "brightness(0.82) saturate(0.75)",      issue: "Off-angle"    },
-  ];
-
-  return (
-    <>
-      <style>{STOCK_GRID_CSS}</style>
-      <div className="w-full rounded-[14px] border border-black/8 bg-[#111318] overflow-hidden p-[10px]">
-        <div className="grid grid-cols-3 gap-[5px]">
-          {cards.map((card, i) => (
-            <div
-              key={i}
-              className="relative overflow-hidden rounded-[7px]"
-              style={{ aspectRatio: "4/3" }}
-            >
-              {/* Base: inconsistent stock image */}
-              <img
-                src={card.before}
-                alt="Inconsistent stock photo"
-                className="absolute inset-0 w-full h-full object-cover"
-                style={{ filter: card.filter }}
-              />
-
-              {/* Issue label — fades out when processed */}
-              <div
-                className="absolute top-[4px] left-[4px] px-[4px] py-[1.5px] rounded-[3px] text-[7.5px] font-bold text-white uppercase tracking-[0.4px] font-['Inter:Bold',sans-serif]"
-                style={{
-                  background: "rgba(239,68,68,0.85)",
-                  animation: `sgLabelFade ${DURATION} ease-in-out ${card.delay} infinite`,
-                }}
-              >
-                {card.issue}
-              </div>
-
-              {/* Reveal layer: Studio AI processed image */}
-              <div
-                className="absolute inset-0"
-                style={{ animation: `sgReveal ${DURATION} ease-in-out ${card.delay} infinite` }}
-              >
-                <img
-                  src={card.after}
-                  alt="Studio AI processed"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-
-              {/* Glowing purple scan line */}
-              <div
-                className="absolute inset-y-0 w-[1.5px]"
-                style={{
-                  background:
-                    "linear-gradient(180deg, transparent 0%, #7C3AED 20%, #A855F7 50%, #7C3AED 80%, transparent 100%)",
-                  animation: `sgScanLine ${DURATION} ease-in-out ${card.delay} infinite, sgScanPulse 1s ease-in-out infinite`,
-                }}
-              />
-
-              {/* Studio AI badge — fades in after scan */}
-              <div
-                className="absolute bottom-[4px] right-[4px] flex items-center gap-[3px] px-[5px] py-[2px] rounded-[3px] text-[7.5px] font-bold text-white font-['Inter:Bold',sans-serif]"
-                style={{
-                  background: "rgba(124,58,237,0.88)",
-                  backdropFilter: "blur(4px)",
-                  animation: `sgBadgeFade ${DURATION} ease-in-out ${card.delay} infinite`,
-                }}
-              >
-                ✓ Studio OS
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Status bar */}
-        <div className="mt-[8px] flex items-center justify-between px-[1px]">
-          <div className="flex items-center gap-[5px]">
-            <span className="size-[5px] rounded-full bg-[#7C3AED] animate-pulse" />
-            <span className="text-[9px] font-bold uppercase tracking-[0.9px] text-white/65 font-['Inter:Bold',sans-serif]">
-              Standardising stock photos
-            </span>
-          </div>
-          <span className="text-[9px] font-bold text-[#7C3AED] font-['Inter:Bold',sans-serif]">
-            134 vehicles
-          </span>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── Syndication hero ────────────────────────────────────────────────────────
-// 6 platform listing cards appear sequentially (staggered) — each gets a
-// green "Live" badge once published, then an "All live" status confirms.
-const SYNDICATION_CSS = `
-@keyframes synCard {
-  0%   { opacity: 0; transform: translateY(6px) scale(0.93); }
-  8%   { opacity: 1; transform: translateY(0) scale(1); }
-  82%  { opacity: 1; transform: translateY(0) scale(1); }
-  94%  { opacity: 0; }
-  100% { opacity: 0; }
-}
-@keyframes synLive {
-  0%, 8%  { opacity: 0; transform: scale(0.7); }
-  16%     { opacity: 1; transform: scale(1); }
-  82%     { opacity: 1; }
-  94%     { opacity: 0; }
-  100%    { opacity: 0; }
-}
-@keyframes synAllLive {
-  0%, 64%  { opacity: 0; transform: translateX(6px); }
-  72%, 80% { opacity: 1; transform: translateX(0); }
-  92%      { opacity: 0; }
-  100%     { opacity: 0; }
-}
-`;
-
-function SyndicationHero() {
-  const DUR = "7s";
-  const platforms = [
-    { name: "AutoTrader", short: "AT",   color: "#FF6600", delay: "0s",    liveDel: "0.55s" },
-    { name: "Cars.com",   short: "Cars", color: "#005B99", delay: "0.6s",  liveDel: "1.15s" },
-    { name: "KBB",        short: "KBB",  color: "#003087", delay: "1.2s",  liveDel: "1.75s" },
-    { name: "Facebook",   short: "FB",   color: "#1877F2", delay: "1.8s",  liveDel: "2.35s" },
-    { name: "Instagram",  short: "IG",   color: "#C13584", delay: "2.4s",  liveDel: "2.95s" },
-    { name: "Dealer Site",short: "Site", color: "#4600F2", delay: "3.0s",  liveDel: "3.55s" },
-  ];
-
-  return (
-    <>
-      <style>{SYNDICATION_CSS}</style>
-      <div className="w-full rounded-[14px] border border-black/8 bg-[#111318] overflow-hidden p-[10px]">
-        <div className="grid grid-cols-3 gap-[5px]">
-          {platforms.map((p, i) => (
-            <div
-              key={i}
-              className="relative overflow-hidden rounded-[7px]"
-              style={{
-                aspectRatio: "4/3",
-                opacity: 0,
-                animation: `synCard ${DUR} ease-out ${p.delay} infinite`,
-              }}
-            >
-              {/* Platform accent stripe */}
-              <div className="absolute top-0 left-0 right-0 h-[3px] z-[1]" style={{ background: p.color }} />
-
-              {/* Car image */}
-              <img
-                src={i % 2 === 0 ? imgCgiTransformed : imgStudioExterior}
-                alt={p.name}
-                className="w-full h-full object-cover"
-              />
-
-              {/* Platform badge */}
-              <div
-                className="absolute bottom-[4px] left-[4px] px-[5px] py-[2px] rounded-[3px] text-[7.5px] font-bold text-white uppercase tracking-[0.4px] font-['Inter:Bold',sans-serif]"
-                style={{ background: `${p.color}DD` }}
-              >
-                {p.short}
-              </div>
-
-              {/* Live badge — appears after card */}
-              <div
-                className="absolute bottom-[4px] right-[4px] flex items-center gap-[2px] px-[5px] py-[2px] rounded-[3px] text-[7.5px] font-bold text-white font-['Inter:Bold',sans-serif]"
-                style={{
-                  background: "rgba(16,185,129,0.9)",
-                  opacity: 0,
-                  animation: `synLive ${DUR} ease-out ${p.liveDel} infinite`,
-                }}
-              >
-                ✓ Live
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Status bar */}
-        <div className="mt-[8px] flex items-center justify-between px-[1px]">
-          <div className="flex items-center gap-[5px]">
-            <span className="size-[5px] rounded-full bg-[#4600F2] animate-pulse" />
-            <span className="text-[9px] font-bold uppercase tracking-[0.9px] text-white/65 font-['Inter:Bold',sans-serif]">
-              Syndicating to 6 platforms
-            </span>
-          </div>
-          <div
-            className="flex items-center gap-[4px]"
-            style={{ opacity: 0, animation: `synAllLive ${DUR} ease-out 3.55s infinite` }}
-          >
-            <span className="size-[5px] rounded-full bg-[#10B981]" />
-            <span className="text-[9px] font-bold text-[#10B981] font-['Inter:Bold',sans-serif]">
-              All live
-            </span>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── Smart Campaigns overlay carousel ───────────────────────────────────────
-// A studio-grade car listing with 3 promotional overlay types cycling like a
-// carousel: Promo Overlay → Aged Inventory Push → Dealer Services Billboard.
-const SMART_CAMPAIGNS_CSS = `
-@keyframes scO1 {
-  0%    { opacity: 0; transform: translateX(14px); }
-  6%    { opacity: 1; transform: translateX(0); }
-  27%   { opacity: 1; transform: translateX(0); }
-  33%   { opacity: 0; transform: translateX(-14px); }
-  33.1% { opacity: 0; transform: translateX(14px); }
-  100%  { opacity: 0; transform: translateX(14px); }
-}
-@keyframes scO2 {
-  0%    { opacity: 0; transform: translateX(14px); }
-  33%   { opacity: 0; transform: translateX(14px); }
-  39%   { opacity: 1; transform: translateX(0); }
-  60%   { opacity: 1; transform: translateX(0); }
-  66%   { opacity: 0; transform: translateX(-14px); }
-  66.1% { opacity: 0; transform: translateX(14px); }
-  100%  { opacity: 0; transform: translateX(14px); }
-}
-@keyframes scO3 {
-  0%    { opacity: 0; transform: translateX(14px); }
-  66%   { opacity: 0; transform: translateX(14px); }
-  72%   { opacity: 1; transform: translateX(0); }
-  93%   { opacity: 1; transform: translateX(0); }
-  99%   { opacity: 0; transform: translateX(-14px); }
-  100%  { opacity: 0; transform: translateX(14px); }
-}
-@keyframes scDot1 {
-  0%, 33%, 100% { opacity: 0.3; transform: scale(1); }
-  6%, 27%       { opacity: 1;   transform: scale(1.4); }
-}
-@keyframes scDot2 {
-  0%, 100%  { opacity: 0.3; transform: scale(1); }
-  39%, 60%  { opacity: 1;   transform: scale(1.4); }
-}
-@keyframes scDot3 {
-  0%, 100%  { opacity: 0.3; transform: scale(1); }
-  72%, 93%  { opacity: 1;   transform: scale(1.4); }
-}
-`;
-
-function SmartCampaignsHero() {
-  const DUR = "9s";
-  return (
-    <>
-      <style>{SMART_CAMPAIGNS_CSS}</style>
-      <div
-        className="relative w-full overflow-hidden rounded-[14px] border border-black/8 bg-[#111318]"
-        style={{ aspectRatio: "16/9" }}
-      >
-        {/* Base: studio-grade car listing */}
-        <img
-          src={imgCgiTransformed}
-          alt="Car listing"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        {/* Gradient for text contrast */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-transparent to-black/25" />
-
-        {/* ── OVERLAY 1: Promotional Offer ── */}
-        <div
-          className="absolute inset-0"
-          style={{ animation: `scO1 ${DUR} ease-in-out infinite` }}
-        >
-          <div
-            className="absolute top-[10px] right-[10px] px-[9px] py-[4px] rounded-[7px] text-[9px] font-bold text-white uppercase tracking-[0.6px] font-['Inter:Bold',sans-serif]"
-            style={{ background: "linear-gradient(135deg,#DC2626,#EF4444)", boxShadow: "0 3px 10px rgba(220,38,38,0.5)" }}
-          >
-            Special Offer
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px] flex items-center justify-between">
-            <span className="text-white text-[11px] font-semibold font-['Inter:Semi_Bold',sans-serif]">Finance from $299/mo</span>
-            <span className="text-[10px] text-white/65 font-['Inter:Regular',sans-serif]">0% APR available</span>
-          </div>
-          <div
-            className="absolute bottom-[10px] left-[10px] px-[7px] py-[2px] rounded-[4px] text-[8px] font-bold text-white/80 uppercase tracking-[0.8px] font-['Inter:Bold',sans-serif]"
-            style={{ background: "rgba(255,255,255,0.12)" }}
-          >
-            Promo Overlay
-          </div>
-        </div>
-
-        {/* ── OVERLAY 2: Aged Inventory Push ── */}
-        <div
-          className="absolute inset-0"
-          style={{ animation: `scO2 ${DUR} ease-in-out infinite` }}
-        >
-          <div
-            className="absolute top-[10px] right-[10px] flex items-center gap-[5px] px-[9px] py-[4px] rounded-[7px] text-[9px] font-bold text-white uppercase tracking-[0.6px] font-['Inter:Bold',sans-serif]"
-            style={{ background: "rgba(245,158,11,0.92)", boxShadow: "0 3px 10px rgba(245,158,11,0.45)" }}
-          >
-            <span>38 Days on Lot</span>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px] flex items-center justify-between">
-            <span className="text-white text-[11px] font-semibold font-['Inter:Semi_Bold',sans-serif]">Price reduced $1,200</span>
-            <span
-              className="px-[7px] py-[3px] rounded-[5px] text-[9px] font-bold text-white font-['Inter:Bold',sans-serif]"
-              style={{ background: "rgba(220,38,38,0.88)" }}
-            >
-              Act Now
-            </span>
-          </div>
-          <div
-            className="absolute bottom-[10px] left-[10px] px-[7px] py-[2px] rounded-[4px] text-[8px] font-bold text-white/80 uppercase tracking-[0.8px] font-['Inter:Bold',sans-serif]"
-            style={{ background: "rgba(255,255,255,0.12)" }}
-          >
-            Aged Inventory
-          </div>
-        </div>
-
-        {/* ── OVERLAY 3: Dealer Services Billboard ── */}
-        <div
-          className="absolute inset-0"
-          style={{ animation: `scO3 ${DUR} ease-in-out infinite` }}
-        >
-          <div
-            className="absolute top-[10px] right-[10px] px-[9px] py-[4px] rounded-[7px] text-[9px] font-bold text-white uppercase tracking-[0.6px] font-['Inter:Bold',sans-serif]"
-            style={{ background: "rgba(16,185,129,0.92)", boxShadow: "0 3px 10px rgba(16,185,129,0.45)" }}
-          >
-            Certified Pre-Owned
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px] flex items-center gap-[6px]">
-            {["Free Delivery", "2-Year Warranty", "Remote Buying"].map((t, i) => (
-              <span key={i} className="flex items-center gap-[6px]">
-                {i > 0 && <span className="size-[3px] rounded-full bg-white/40" />}
-                <span className="text-white text-[11px] font-semibold font-['Inter:Semi_Bold',sans-serif]">{t}</span>
-              </span>
-            ))}
-          </div>
-          <div
-            className="absolute bottom-[10px] left-[10px] px-[7px] py-[2px] rounded-[4px] text-[8px] font-bold text-white/80 uppercase tracking-[0.8px] font-['Inter:Bold',sans-serif]"
-            style={{ background: "rgba(255,255,255,0.12)" }}
-          >
-            Billboard
-          </div>
-        </div>
-
-        {/* Always-visible: Active Campaign badge top-left */}
-        <div className="absolute top-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
-          <span className="size-[5px] rounded-full bg-[#DC2626] animate-pulse" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
-            Active Campaign
-          </span>
-        </div>
-
-        {/* Carousel indicator dots */}
-        <div className="absolute top-[10px] right-[10px] flex gap-[4px]" style={{ marginTop: 32 }}>
-          {([`scDot1`, `scDot2`, `scDot3`] as const).map((anim, i) => (
-            <span
-              key={i}
-              className="size-[5px] rounded-full bg-white"
-              style={{ animation: `${anim} ${DUR} ease-in-out infinite` }}
-            />
-          ))}
-        </div>
-      </div>
-    </>
-  );
-}
-
-// ─── Raw scan animation ───────────────────────────────────────────────────────
-// CSS keyframes injected once — simulates a Studio AI scan pass:
-// a glowing magenta line sweeps left→right, revealing the studio output.
-const RAW_SCAN_CSS = `
-@keyframes studioReveal {
-  0%,8%    { clip-path: inset(0 100% 0 0); }
-  52%,62%  { clip-path: inset(0 0% 0 0); }
-  92%,100% { clip-path: inset(0 100% 0 0); }
-}
-@keyframes scanLineMove {
-  0%,8%    { left: 0%; opacity: 1; }
-  52%,62%  { left: 100%; opacity: 0; }
-  63%      { left: 0%; opacity: 0; }
-  70%,100% { left: 0%; opacity: 1; }
-}
-@keyframes scanPulse {
-  0%,100% { box-shadow: 0 0 8px 3px rgba(233,30,99,0.55), 0 0 22px 6px rgba(233,30,99,0.22); }
-  50%     { box-shadow: 0 0 14px 5px rgba(233,30,99,0.85), 0 0 34px 10px rgba(233,30,99,0.42); }
-}
-`;
-
-function RawScanHero() {
-  return (
-    <>
-      <style>{RAW_SCAN_CSS}</style>
-      <div
-        className="relative w-full overflow-hidden rounded-[14px] border border-black/8 bg-[#0d0d0d]"
-        style={{ aspectRatio: "16/9" }}
-      >
-        {/* Base layer: raw lot photo */}
-        <img
-          src={imgRawExterior}
-          alt="Raw lot photo"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-
-        {/* Reveal layer: studio output, unmasked by scan line */}
-        <div
-          className="absolute inset-0"
-          style={{ animation: "studioReveal 4s cubic-bezier(0.45,0,0.55,1) 1.2s infinite" }}
-        >
-          <img
-            src={imgStudioExterior}
-            alt="Studio output"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Glowing scan line */}
-        <div
-          className="absolute inset-y-0 w-[2px]"
-          style={{
-            background:
-              "linear-gradient(180deg, transparent 0%, #E91E63 18%, #FF5C9A 50%, #E91E63 82%, transparent 100%)",
-            animation:
-              "scanLineMove 4s cubic-bezier(0.45,0,0.55,1) 1.2s infinite, scanPulse 1.1s ease-in-out infinite",
-          }}
-        />
-
-        {/* Bottom labels */}
-        <div className="absolute bottom-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
-          <span className="size-[5px] rounded-full bg-[#9CA3AF]" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-[#D1D5DB] font-['Inter:Bold',sans-serif]">
-            Raw lot photo
-          </span>
-        </div>
-        <div
-          className="absolute bottom-[10px] right-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px]"
-          style={{ background: "rgba(233,30,99,0.82)", backdropFilter: "blur(4px)" }}
-        >
-          <span className="size-[5px] rounded-full bg-white" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
-            Studio OS output
-          </span>
-        </div>
-
-        {/* Top-right Studio AI badge */}
-        <div
-          className="absolute top-[10px] right-[10px] px-[10px] py-[5px] rounded-[8px] text-[11px] font-bold text-white font-['Inter:Bold',sans-serif]"
-          style={{
-            background: "linear-gradient(90deg, #FF5C9A 0%, #B651D7 100%)",
-            boxShadow: "0 4px 14px rgba(182,81,215,0.45)",
-          }}
-        >
-          Studio OS
-        </div>
-
-        {/* Top-left scanning indicator */}
-        <div className="absolute top-[10px] left-[10px] flex items-center gap-[5px] px-[8px] py-[4px] rounded-[6px] bg-black/60 backdrop-blur-sm">
-          <span className="size-[5px] rounded-full bg-[#E91E63] animate-pulse" />
-          <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
-            Scanning
-          </span>
-        </div>
-      </div>
-    </>
-  );
-}
 
 // ─── Pitch content ─────────────────────────────────────────────────────────────
 const PITCHES: Record<BucketKey, PitchContent> = {
@@ -685,7 +75,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "Go live same day",
     ],
     bulletStyle: "nodes",
-    heroNode: <RawScanHero />,
+    heroImage: GIF_STUDIO_CREATE,
     actionLabel: "Process all 89",
   },
   nophoto: {
@@ -728,7 +118,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "Go live instantly",
     ],
     bulletStyle: "nodes",
-    heroNode: <SmartMatchScanHero />,
+    heroImage: GIF_STUDIO_INSTANT,
     actionLabel: "Run Studio Instant",
   },
   cgi: {
@@ -771,13 +161,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "Go live with real images",
     ],
     bulletStyle: "nodes",
-    heroNode: <StockPhotoGridHero />,
-    comparison: {
-      beforeLabel: "Standard processed",
-      afterLabel: "CGI-grade render",
-      before: <img src={imgCgiFront} alt="Standard processed front" className="w-full h-full object-cover" />,
-      after:  <img src={imgCgiTransformed} alt="CGI-grade front" className="w-full h-full object-cover" />,
-    },
+    heroImage: GIF_STUDIO_INSTANT,
     actionLabel: "Replace stock photos",
   },
   unsyndicated: {
@@ -820,7 +204,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "Track listing health",
     ],
     bulletStyle: "nodes",
-    heroNode: <SyndicationHero />,
+    heroImage: GIF_STUDIO_PUBLISH,
     actionLabel: "Publish all 156",
   },
   aging: {
@@ -863,7 +247,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
       "Publish",
     ],
     bulletStyle: "nodes",
-    heroNode: <SmartCampaignsHero />,
+    heroImage: GIF_STUDIO_PROMOTE,
     features: [
       { icon: <Sparkles size={16} strokeWidth={2.2} />,  title: "Targeted Audiences", tagline: "In-market shoppers, auto-segmented.", accent: "#DC2626" },
       { icon: <Timer size={16} strokeWidth={2.2} />,     title: "Holding-Cost ROI",   tagline: "$/day math on every campaign run.", accent: "#F59E0B" },
@@ -873,6 +257,82 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     actionLabel: "Launch campaigns",
   },
 };
+
+// ─── Product tour step configs ────────────────────────────────────────────────
+// No em-dashes in copy per brand voice guidelines.
+
+const FIRST_LOGIN_STEPS: TourStep[] = [
+  {
+    targetId: "plan-chip",
+    title: "Studio OS Lite, trial active",
+    body: "You have 18 days left in your free trial. All Pro features are unlocked until it ends.",
+    placement: "bottom",
+  },
+  {
+    targetId: "page-tabs",
+    title: "Two views, one console",
+    body: "The Overview tab shows your monthly ROI report. Active Inventory is where you work through issues bucket by bucket.",
+    placement: "bottom",
+  },
+  {
+    targetId: "kpi-bar",
+    title: "Your live inventory health",
+    body: "Days to Frontline, Inventory Score and Holding Cost all improve as you resolve each bucket.",
+    placement: "bottom",
+  },
+  {
+    targetId: "filter-raw",
+    title: "Studio Create: Car Tours and Video Tours",
+    body: "Car Tours and Video Tours within Studio Create are Pro features. Basic photo processing is available on all plans.",
+    placement: "bottom",
+    lockPreview: true,
+  },
+  {
+    targetId: "filter-unsyndicated",
+    title: "Studio Publish: Pro feature",
+    body: "Publishing to all marketplaces and social channels is a Pro feature. It reverts to Lite access after your trial ends.",
+    placement: "bottom",
+    lockPreview: true,
+  },
+  {
+    targetId: "filter-aging",
+    title: "Smart Campaigns: Pro feature",
+    body: "Auto-triggered campaigns on aged inventory stop the daily holding cost bleed. Pro-only after your trial ends.",
+    placement: "top",
+    ctaLabel: "Got it",
+    lockPreview: true,
+  },
+];
+
+const PRO_UPGRADE_STEPS: TourStep[] = [
+  {
+    targetId: "plan-chip",
+    title: "You are on Studio OS Pro",
+    body: "All three Pro features are now permanently unlocked. Here is what changed.",
+    placement: "bottom",
+  },
+  {
+    targetId: "filter-raw",
+    title: "Car Tours and Video Tours: unlocked",
+    body: "Studio Create now includes interactive Car Tours and Video Tours. Turn any lot capture into a buyer experience.",
+    placement: "bottom",
+  },
+  {
+    targetId: "filter-unsyndicated",
+    title: "Full publishing: unlocked",
+    body: "Studio Publish now covers all marketplaces and social: AutoTrader, Cars.com, Facebook, Instagram and more.",
+    placement: "bottom",
+  },
+  {
+    targetId: "filter-aging",
+    title: "Smart Campaigns: unlocked",
+    body: "These aged units are bleeding holding cost every day. Launch your first campaign and stop the bleed.",
+    placement: "top",
+    ctaLabel: "Launch campaigns",
+  },
+];
+
+type TourCase = "first-login" | "pro-upgrade";
 
 type Scene = "connect" | "loading" | "scanning" | "unboxing" | "dashboard" | "expired";
 
@@ -1097,7 +557,13 @@ interface Demo2Props {
 export function Demo2({ demoConfig }: Demo2Props) {
   const [scene, setScene] = useState<Scene>("connect");
   const [dashTab, setDashTab] = useState<"overview" | "inventory">("inventory");
-  const [tier, setTier] = useState<StudioTier>(demoConfig?.tier ?? "lite");
+  const [tier] = useState<StudioTier>(demoConfig?.tier ?? "lite");
+  // trialActive: false by default. Studio Publish + Studio Promote are locked until
+  // the customer explicitly starts the free 30-day Pro trial.
+  const [trialActive, setTrialActive] = useState(false);
+  const [tourActive, setTourActive] = useState<TourCase | null>(null);
+  // Forces the dashboard to the inventory tab when the tour needs filter pills visible
+  const [tourForcedTab, setTourForcedTab] = useState<"overview" | "inventory" | undefined>(undefined);
   const [imsName, setImsName] = useState(demoConfig?.imsProvider ?? "Vincue");
   const [activeBucket, setActiveBucket] = useState<BucketKey | null>(null);
   const [pitchOpen, setPitchOpen] = useState(false);
@@ -1176,12 +642,33 @@ export function Demo2({ demoConfig }: Demo2Props) {
     setScene("unboxing");
   }, []);
 
-  const handleUnboxingContinue = useCallback(() => setScene("dashboard"), []);
+  const handleUnboxingContinue = useCallback(() => {
+    setScene("dashboard");
+    // Small delay so the dashboard finishes its entrance animation before the
+    // spotlight renders over it.
+    setTimeout(() => setTourActive("first-login"), 600);
+  }, []);
 
   // Trial-expiry demo flow: degrade to the standard console with $-lost
   // messaging, then reactivate back into Studio OS.
   const handleExpire = useCallback(() => setScene("expired"), []);
   const handleReactivate = useCallback(() => setScene("dashboard"), []);
+
+  const dismissTour = useCallback(() => {
+    setTourActive(null);
+    setTourForcedTab(undefined);
+  }, []);
+
+  // On Pro upgrade tour completion, open the aging pitch so the AE can
+  // immediately launch the first Smart Campaign.
+  const handleTourComplete = useCallback(() => {
+    const wasProUpgrade = tourActive === "pro-upgrade";
+    dismissTour();
+    if (wasProUpgrade) {
+      setActiveBucket("aging");
+      setPitchOpen(true);
+    }
+  }, [tourActive, dismissTour]);
 
   // ─── Bucket click → filter + open pitch (no transformation yet) ──
   const handleBucketClick = useCallback((b: BucketKey) => {
@@ -1224,14 +711,20 @@ export function Demo2({ demoConfig }: Demo2Props) {
   // Studio Promote is gated on Lite. Upgrading flips the tier to Pro, which
   // unlocks the aging bucket's campaign builder. A burst of confetti sells the
   // moment — the dashboard's own $/day bleed was the argument.
-  const handleUpgradeToPro = useCallback(() => {
-    setTier("pro");
+  // Activates the free 30-day Pro trial. Studio Publish and Studio Promote unlock.
+  // The plan stays as Studio Lite — trialActive is the gate.
+  const handleActivateTrial = useCallback(() => {
+    setTrialActive(true);
     confetti({
       particleCount: 120,
       spread: 70,
       origin: { x: 0.85, y: 0.4 },
       colors: ["#4600F2", "#B651D7", "#FF5C9A", "#FFFFFF"],
     });
+    // Ensure inventory tab is active (filter pills must be in DOM for the tour)
+    // then start the Pro upgrade tour after confetti settles.
+    setTourForcedTab("inventory");
+    setTimeout(() => setTourActive("pro-upgrade"), 1400);
   }, []);
 
   // From the SmartCampaign pitch CTA → close pitch, minimise the Need Actions
@@ -1334,12 +827,17 @@ export function Demo2({ demoConfig }: Demo2Props) {
   const pitchContent = activeBucket ? PITCHES[activeBucket] : null;
   const isAgingPitch = activeBucket === "aging";
   const isActiveCompleted = activeBucket ? completed[activeBucket] : false;
-  // Studio Promote (aging bucket) is the Pro upsell. On Lite it stays locked
-  // until the AE upgrades — and the lock note quantifies the daily bleed only
-  // Pro can stop, so the dashboard's own numbers do the selling.
-  const promoteLocked = tier === "lite" && !completed.aging;
+  // Studio Publish (unsyndicated) and Studio Promote (aging) are Pro features.
+  // Both stay locked until the customer activates the free 30-day trial.
+  const proFeaturesLocked = !trialActive && tier === "lite";
+  const promoteLocked = proFeaturesLocked && !completed.aging;
+  const publishLocked = proFeaturesLocked && !completed.unsyndicated;
   const agingLocked = isAgingPitch && promoteLocked;
-  const lockedKeys = new Set<BucketKey>(promoteLocked ? (["aging"] as BucketKey[]) : []);
+  const unsyndLocked = activeBucket === "unsyndicated" && publishLocked;
+  const lockedKeys = new Set<BucketKey>([
+    ...(promoteLocked ? ["aging" as BucketKey] : []),
+    ...(publishLocked ? ["unsyndicated" as BucketKey] : []),
+  ]);
 
   // ROI-as-value numbers for the Overview tab — sourced from the same
   // opportunity model the setup screen uses, so the story stays consistent.
@@ -1348,7 +846,8 @@ export function Demo2({ demoConfig }: Demo2Props) {
     <OverviewPanel
       dealerName={demoConfig?.dealershipName}
       tier={tier}
-      onUpgrade={handleUpgradeToPro}
+      trialActive={trialActive}
+      onUpgrade={handleActivateTrial}
       onExpire={handleExpire}
       trialDaysLeft={18}
       completedCount={completedCount}
@@ -1388,10 +887,20 @@ export function Demo2({ demoConfig }: Demo2Props) {
         selectedIds={selectedVehicleIds}
         onToggleSelect={handleToggleSelect}
         tier={tier}
+        trialActive={trialActive}
         lockedKeys={lockedKeys}
         overviewSlot={overviewSlot}
         onPageTabChange={setDashTab}
+        forcedPageTab={tourForcedTab}
       />
+
+      {tourActive && (
+        <ProductTour
+          steps={tourActive === "pro-upgrade" ? PRO_UPGRADE_STEPS : FIRST_LOGIN_STEPS}
+          onComplete={handleTourComplete}
+          onSkip={dismissTour}
+        />
+      )}
 
       {/* Diagnostic FAB + before/after toggle belong to the Active Inventory
           workflow — hidden on the Overview value report. */}
@@ -1514,6 +1023,13 @@ export function Demo2({ demoConfig }: Demo2Props) {
           onAction = () => runTransform(activeBucket!);
         }
 
+        const isPitchLocked = agingLocked || unsyndLocked;
+        const lockNote = agingLocked
+          ? `${BUCKET_TOTALS.aging} aged units are bleeding ~$${agingDailyBleed.toLocaleString()}/day in holding cost. Studio Promote auto-runs visual promotions to move them. Included in Studio OS Pro.`
+          : unsyndLocked
+            ? `${BUCKET_TOTALS.unsyndicated} listing-ready vehicles are missing marketplace and social reach. Studio Publish gets them live everywhere with one click. Included in Studio OS Pro.`
+            : undefined;
+
         return (
           <PitchPanel
             open={pitchOpen}
@@ -1522,13 +1038,11 @@ export function Demo2({ demoConfig }: Demo2Props) {
             actionRunning={runningBucket === activeBucket}
             completed={false}
             {...pitchContent}
-            success={agingLocked ? undefined : successForActive}
+            success={isPitchLocked ? undefined : successForActive}
             actionLabel={label}
-            locked={agingLocked}
-            onUpgrade={handleUpgradeToPro}
-            lockNote={agingLocked
-              ? `${BUCKET_TOTALS.aging} aged units are bleeding ~$${agingDailyBleed.toLocaleString()}/day in holding cost. Studio Promote auto-runs visual promotions to move them — included with Studio OS Pro.`
-              : undefined}
+            locked={isPitchLocked}
+            onUpgrade={handleActivateTrial}
+            lockNote={lockNote}
             demoConfig={demoConfig}
             completedSteps={completedCount}
             metricsStep={activeBucket ?? undefined}

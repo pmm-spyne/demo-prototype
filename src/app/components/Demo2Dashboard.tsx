@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import {
   Plus, Sparkles, ChevronDown, Filter, Download, Eye, CircleDot, Info,
-  Camera, ImageOff, Wand2, Send, TrendingDown, Lock,
+  Camera, ImageOff, Wand2, Send, TrendingDown, Lock, Clock,
 } from "lucide-react";
 import type { StudioTier } from "../types/demoConfig";
 import { AppHeader, AppSidebar } from "./AppShell";
@@ -44,6 +44,8 @@ export interface Demo2DashboardProps {
   onNavigate?: (label: string) => void;
   /** Active Studio OS tier — drives the plan chip + Pro-locked filter pills. */
   tier?: StudioTier;
+  /** True once the customer has started their free Pro trial. */
+  trialActive?: boolean;
   /** Bucket keys gated behind Studio OS Pro (renders a lock on the pill). */
   lockedKeys?: Set<BucketKey>;
   /** Rendered when the Overview page-tab is active (the ROI value report). */
@@ -52,6 +54,11 @@ export interface Demo2DashboardProps {
   initialPageTab?: PageTab;
   /** Notifies the parent when the page-tab changes (to toggle overlays). */
   onPageTabChange?: (tab: PageTab) => void;
+  /**
+   * External tab override — used by the product tour to ensure the correct
+   * tab is visible before spotlighting filter pills or inventory elements.
+   */
+  forcedPageTab?: PageTab;
 }
 
 export type PageTab = "overview" | "inventory";
@@ -146,12 +153,22 @@ export function Demo2Dashboard({
   buckets, activeBucket, onBucketClick, onClearBucket,
   rows, highlightIds, transformingIds,
   selectedIds, onToggleSelect, onNavigate,
-  tier = "lite", lockedKeys, overviewSlot, initialPageTab = "inventory", onPageTabChange,
+  tier = "lite", trialActive = false, lockedKeys, overviewSlot, initialPageTab = "inventory", onPageTabChange,
+  forcedPageTab,
 }: Demo2DashboardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
   const [vehicleType, setVehicleType] = useState<VehicleTypeTab>("new");
   const [pageTab, setPageTab] = useState<PageTab>(initialPageTab);
+
+  // Honour external tab override (e.g. product tour switching to inventory tab)
+  useEffect(() => {
+    if (forcedPageTab && forcedPageTab !== pageTab) {
+      setPageTab(forcedPageTab);
+      onPageTabChange?.(forcedPageTab);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [forcedPageTab]);
 
   // Tabs filter by the explicit vehicleType field; aging on the lot does
   // *not* make a vehicle pre-owned — it can still be a new unit racking up
@@ -278,17 +295,21 @@ export function Demo2Dashboard({
                 </p>
               </div>
               <div className="flex items-center gap-[10px]">
-                {tier === "pro" ? (
+                {/* Plan chip — always shows Studio OS Lite since that is the active plan */}
+                <span
+                  data-tour-id="plan-chip"
+                  className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-semibold text-[#4600F2] bg-[rgba(70,0,242,0.07)] border border-[rgba(70,0,242,0.18)] font-['Inter:Semi_Bold',sans-serif]"
+                >
+                  Studio OS Lite
+                </span>
+                {/* Trial active badge */}
+                {trialActive && (
                   <span
-                    className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-bold text-white font-['Inter:Bold',sans-serif]"
-                    style={{ background: "linear-gradient(90deg, #4600F2 0%, #B651D7 100%)" }}
+                    className="inline-flex items-center gap-[5px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-bold text-white font-['Inter:Bold',sans-serif]"
+                    style={{ background: "linear-gradient(90deg,#4600F2,#B651D7)" }}
                   >
-                    <Sparkles size={13} strokeWidth={2.6} />
-                    Studio OS Pro
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-semibold text-[#4600F2] bg-[rgba(70,0,242,0.07)] border border-[rgba(70,0,242,0.18)] font-['Inter:Semi_Bold',sans-serif]">
-                    Studio OS Lite
+                    <Clock size={13} strokeWidth={2.4} />
+                    Pro Trial: 18 days left
                   </span>
                 )}
                 <button className="flex items-center gap-[6px] h-[36px] px-[14px] bg-white border border-black/10 rounded-[8px] text-[12px] font-medium text-[#374151] hover:bg-gray-50 font-['Inter:Medium',sans-serif]">
@@ -307,7 +328,7 @@ export function Demo2Dashboard({
             </div>
 
             {/* Page tabs — Overview / Active Inventory */}
-            <div data-fade className="flex items-center gap-[4px] mb-[20px] p-[4px] bg-black/[0.04] rounded-[10px] w-fit">
+            <div data-fade data-tour-id="page-tabs" className="flex items-center gap-[4px] mb-[20px] p-[4px] bg-black/[0.04] rounded-[10px] w-fit">
               {([["overview", "Overview"], ["inventory", "Active Inventory"]] as const).map(([key, label]) => (
                 <button
                   key={key}
@@ -365,7 +386,7 @@ export function Demo2Dashboard({
                 ▸ a label + info icon on the top row
                 ▸ the main figure + persistent uplift indicator on the bottom-left
                 ▸ a status pill (Critical / Needs attention / Healthy) on the bottom-right */}
-            <div data-fade className="flex gap-[14px] mb-[28px]">
+            <div data-fade data-tour-id="kpi-bar" className="flex gap-[14px] mb-[28px]">
               {/* ── 1. Days to Frontline ─────────────────────────────────── */}
               <div className="relative flex-1 rounded-[14px] border border-black/8 bg-white px-[18px] py-[12px] shadow-[0_1px_2px_rgba(0,0,0,0.03)] flex flex-col">
                 <KpiDelta value={dtf} direction="down-good" suffix=" d" />
@@ -625,11 +646,14 @@ export function Demo2Dashboard({
                       type="button"
                       data-filter-card
                       data-active={isActive ? "true" : undefined}
+                      data-tour-id={`filter-${f.key}`}
                       onClick={() => isActive ? onClearBucket() : onBucketClick(f.key)}
                       className={`relative inline-flex items-center gap-[7px] h-[34px] pl-[8px] pr-[12px] rounded-full border transition-all ${
                         isActive
                           ? "bg-[#311083] border-[#311083]"
-                          : "bg-white border-black/8 hover:border-black/15 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+                          : isLocked
+                            ? "bg-[#F3F4F6] border-black/8 border-dashed opacity-70 hover:opacity-90"
+                            : "bg-white border-black/8 hover:border-black/15 hover:shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
                       }`}
                     >
                       <span

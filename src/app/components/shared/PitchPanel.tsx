@@ -131,16 +131,17 @@ export interface PitchPanelProps extends PitchContent {
   selectedChannels?: Set<string>;
   onChannelToggle?: (id: string) => void;
   /**
-   * When true, this product is gated behind Studio OS Pro. The pitch still
-   * renders its full story so the AE can sell it, but the primary CTA is
-   * replaced by an "Unlock with Studio OS Pro" upgrade button and a Pro lock
-   * banner is shown in the header.
+   * When true, this product is gated. The pitch still renders its full story
+   * so the AE can sell it, but the primary CTA is replaced by the trial CTA
+   * and a lock banner is shown in the header.
    */
   locked?: boolean;
-  /** Fired when the AE clicks the Pro upgrade CTA on a locked pitch. */
+  /** Fired when the AE clicks the trial / upgrade CTA on a locked pitch. */
   onUpgrade?: () => void;
   /** Optional one-liner shown in the locked banner (e.g. the $/day at stake). */
   lockNote?: string;
+  /** Override the locked CTA label. Defaults to "Start free 30-day trial". */
+  upgradeCta?: string;
   /** Dealer inputs from the setup screen — powers the Impact Metrics section */
   demoConfig?: DemoConfig;
   /** Number of buckets completed before this pitch opened (for chart history) */
@@ -223,7 +224,7 @@ export function PitchPanel(props: PitchPanelProps) {
     proof, heroImage, heroNode, comparison, features, featuresPhase = "pitch", actionLabel,
     channels, selectedChannels, onChannelToggle,
     success,
-    locked, onUpgrade, lockNote,
+    locked, onUpgrade, lockNote, upgradeCta,
     demoConfig, completedSteps, metricsStep,
   } = props;
 
@@ -397,7 +398,7 @@ export function PitchPanel(props: PitchPanelProps) {
                   Studio OS Pro
                 </p>
                 <h3 className="text-[17px] font-bold font-['Inter:Bold',sans-serif] leading-[21px]">
-                  {product} unlocks with Studio OS Pro
+                  {product} is included in Studio OS Pro
                 </h3>
                 {lockNote && (
                   <p className="mt-[6px] text-[12.5px] text-white/85 font-['Inter:Regular',sans-serif] leading-snug">
@@ -744,7 +745,7 @@ export function PitchPanel(props: PitchPanelProps) {
               style={{ background: MAGENTA_GRAD, boxShadow: "0 8px 22px rgba(182,81,215,0.4)" }}
             >
               <Sparkles size={16} strokeWidth={2.6} />
-              Unlock with Studio OS Pro
+              {upgradeCta ?? "Start free 30-day trial"}
               <ArrowRight size={16} />
             </button>
           ) : (

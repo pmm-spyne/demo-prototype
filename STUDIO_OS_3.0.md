@@ -105,7 +105,54 @@ from `calcOpportunity(demoConfig)` so the story stays internally consistent.
 - First-time unboxing always shows once after the scan (no first/second-run
   persistence yet).
 
-## 7. Open / possible follow-ups
+## 7. Product tours
+
+Two guided tours share the `ProductTour` component (`src/app/components/shared/ProductTour.tsx`).
+The component renders a portal with an SVG spotlight cutout and a floating tooltip.
+
+### Tour 1 — First login (6 steps, triggered on first dashboard entry)
+
+Triggered inside `handleUnboxingContinue` in `Demo2.tsx` after a 600ms delay (lets the
+dashboard entrance animation finish before the spotlight appears).
+
+| Step | Target (`data-tour-id`) | Topic |
+| ---- | ----------------------- | ----- |
+| 1 | `plan-chip` | Trial active on Lite |
+| 2 | `page-tabs` | Overview vs Active Inventory |
+| 3 | `kpi-bar` | Live inventory KPIs |
+| 4 | `filter-raw` | Studio Create: Car Tours + Video Tours (Pro badge) |
+| 5 | `filter-unsyndicated` | Studio Publish: marketplace + social (Pro badge) |
+| 6 | `filter-aging` | Smart Campaigns (Pro badge) |
+
+### Tour 2 — Pro upgrade (4 steps, triggered after confetti settles)
+
+Triggered inside `handleUpgradeToPro` in `Demo2.tsx` after a 1400ms delay.
+`forcedPageTab="inventory"` is set first so filter pills are in the DOM.
+Completing this tour auto-opens the aging pitch panel.
+
+| Step | Target (`data-tour-id`) | Topic |
+| ---- | ----------------------- | ----- |
+| 1 | `plan-chip` | Now on Studio OS Pro |
+| 2 | `filter-raw` | Car Tours + Video Tours unlocked |
+| 3 | `filter-unsyndicated` | Full publishing unlocked |
+| 4 | `filter-aging` | Smart Campaigns unlocked (CTA: "Launch campaigns") |
+
+### Pro plan add-ons (tour narrative)
+
+The three features highlighted as Pro in both tours:
+- **Car Tours + Video Tours** — within Studio Create (`raw` bucket pitch).
+- **Studio Publish** — full marketplace + social syndication (`unsyndicated` bucket).
+- **Smart Campaigns** — Studio Promote age-triggered campaigns (`aging` bucket).
+
+### Key files
+
+| File | Role |
+| ---- | ---- |
+| `src/app/components/shared/ProductTour.tsx` | Spotlight + tooltip + step navigation component |
+| `src/app/components/Demo2.tsx` | `FIRST_LOGIN_STEPS`, `PRO_UPGRADE_STEPS`, `tourActive` state, trigger logic |
+| `src/app/components/Demo2Dashboard.tsx` | `data-tour-id` attributes on plan chip, page tabs, KPI bar, filter pills; `forcedPageTab` prop |
+
+## 9. Open / possible follow-ups
 
 - Wire tier + first-run selection into `DemoSetupScreen` (currently `tier`
   defaults to Lite; toggled live via the in-pitch upgrade).
