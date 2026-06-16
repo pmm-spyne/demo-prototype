@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
-import { X, ArrowRight, ChevronLeft, Lock, Sparkles } from "lucide-react";
+import { X, ArrowRight, ChevronLeft, Lock } from "lucide-react";
 
 export interface TourStep {
   /** data-tour-id of the element to spotlight */
@@ -195,21 +195,14 @@ export function ProductTour({ steps, onComplete, onSkip }: ProductTourProps) {
             {/* Title row */}
             <div className="flex items-start justify-between gap-[8px] mb-[8px]">
               <div className="flex items-center gap-[7px] flex-wrap min-w-0">
-                {step.lockPreview ? (
+                {step.lockPreview && (
                   <span
                     className="inline-flex items-center gap-[3px] shrink-0 px-[7px] py-[2px] rounded-full text-[9px] font-bold uppercase tracking-[0.6px] text-white font-['Inter:Bold',sans-serif]"
                     style={{ background: "linear-gradient(90deg,#4600F2,#B651D7)" }}
                   >
                     <Lock size={8} strokeWidth={3} /> Pro
                   </span>
-                ) : stepIdx === 0 && steps.length > 4 ? (
-                  <span
-                    className="inline-flex items-center gap-[3px] shrink-0 px-[7px] py-[2px] rounded-full text-[9px] font-bold uppercase tracking-[0.6px] text-white font-['Inter:Bold',sans-serif]"
-                    style={{ background: "linear-gradient(90deg,#059669,#10B981)" }}
-                  >
-                    <Sparkles size={8} strokeWidth={2.6} /> Trial active
-                  </span>
-                ) : null}
+                )}
                 <h3 className="text-[13.5px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-snug">
                   {step.title}
                 </h3>

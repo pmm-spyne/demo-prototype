@@ -264,14 +264,14 @@ const PITCHES: Record<BucketKey, PitchContent> = {
 const FIRST_LOGIN_STEPS: TourStep[] = [
   {
     targetId: "plan-chip",
-    title: "Studio OS Lite, trial active",
-    body: "You have 18 days left in your free trial. All Pro features are unlocked until it ends.",
+    title: "You are on Studio OS Lite",
+    body: "Studio Publish and Studio Promote are Pro features, locked by default. Start a free 30-day trial to unlock them. No credit card required.",
     placement: "bottom",
   },
   {
     targetId: "page-tabs",
     title: "Two views, one console",
-    body: "The Overview tab shows your monthly ROI report. Active Inventory is where you work through issues bucket by bucket.",
+    body: "The Overview tab shows your monthly ROI report. Active Inventory is where you work through your inventory bucket by bucket.",
     placement: "bottom",
   },
   {
@@ -282,24 +282,22 @@ const FIRST_LOGIN_STEPS: TourStep[] = [
   },
   {
     targetId: "filter-raw",
-    title: "Studio Create: Car Tours and Video Tours",
-    body: "Car Tours and Video Tours within Studio Create are Pro features. Basic photo processing is available on all plans.",
+    title: "Studio Create: available on Lite",
+    body: "Fix raw photos and process lot captures here. Car Tours and Video Tours are Pro features — start your trial to unlock them.",
     placement: "bottom",
-    lockPreview: true,
   },
   {
     targetId: "filter-unsyndicated",
-    title: "Studio Publish: Pro feature",
-    body: "Publishing to all marketplaces and social channels is a Pro feature. It reverts to Lite access after your trial ends.",
+    title: "Studio Publish: locked",
+    body: "Publish to all marketplaces and social channels with one click. This is a Pro feature — start your free trial to unlock it.",
     placement: "bottom",
     lockPreview: true,
   },
   {
     targetId: "filter-aging",
-    title: "Smart Campaigns: Pro feature",
-    body: "Auto-triggered campaigns on aged inventory stop the daily holding cost bleed. Pro-only after your trial ends.",
+    title: "Smart Campaigns: locked",
+    body: "Age-triggered campaigns stop the daily holding cost bleed automatically. Start your free 30-day trial to unlock Studio Publish and Smart Campaigns.",
     placement: "top",
-    ctaLabel: "Got it",
     lockPreview: true,
   },
 ];
@@ -659,8 +657,26 @@ export function Demo2({ demoConfig }: Demo2Props) {
     setTourForcedTab(undefined);
   }, []);
 
-  // On Pro upgrade tour completion, open the aging pitch so the AE can
-  // immediately launch the first Smart Campaign.
+  // Activates the free 30-day Pro trial. Studio Publish and Studio Promote unlock.
+  // The plan stays as Studio Lite — trialActive is the gate.
+  const handleActivateTrial = useCallback(() => {
+    setTrialActive(true);
+    confetti({
+      particleCount: 120,
+      spread: 70,
+      origin: { x: 0.85, y: 0.4 },
+      colors: ["#4600F2", "#B651D7", "#FF5C9A", "#FFFFFF"],
+    });
+    // Ensure inventory tab is active (filter pills must be in DOM for the tour)
+    // then start the Pro upgrade tour after confetti settles.
+    setTourForcedTab("inventory");
+    setTimeout(() => setTourActive("pro-upgrade"), 1400);
+  }, []);
+
+  // On first-login tour completion: dismiss the tour only — trial activation is
+  // handled by explicit upgrade CTAs (Overview banner, pitch panel, etc.).
+  // On Pro upgrade tour completion:
+  //   dismiss the tour, then open the aging pitch so the AE can launch the first campaign.
   const handleTourComplete = useCallback(() => {
     const wasProUpgrade = tourActive === "pro-upgrade";
     dismissTour();
@@ -711,22 +727,6 @@ export function Demo2({ demoConfig }: Demo2Props) {
   // Studio Promote is gated on Lite. Upgrading flips the tier to Pro, which
   // unlocks the aging bucket's campaign builder. A burst of confetti sells the
   // moment — the dashboard's own $/day bleed was the argument.
-  // Activates the free 30-day Pro trial. Studio Publish and Studio Promote unlock.
-  // The plan stays as Studio Lite — trialActive is the gate.
-  const handleActivateTrial = useCallback(() => {
-    setTrialActive(true);
-    confetti({
-      particleCount: 120,
-      spread: 70,
-      origin: { x: 0.85, y: 0.4 },
-      colors: ["#4600F2", "#B651D7", "#FF5C9A", "#FFFFFF"],
-    });
-    // Ensure inventory tab is active (filter pills must be in DOM for the tour)
-    // then start the Pro upgrade tour after confetti settles.
-    setTourForcedTab("inventory");
-    setTimeout(() => setTourActive("pro-upgrade"), 1400);
-  }, []);
-
   // From the SmartCampaign pitch CTA → close pitch, minimise the Need Actions
   // FAB, auto-select all aging vehicles, and surface the SelectionActionBar so
   // the AE can act on the cohort just like Demo 1's >40-day flow.
