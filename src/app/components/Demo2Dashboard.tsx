@@ -283,7 +283,13 @@ export function Demo2Dashboard({
         <div ref={containerRef} className="flex-1 bg-[#f9fafb] overflow-auto">
           <div className="px-[28px] py-[20px] min-w-[1100px]">
             {/* Page header */}
-            <div data-fade className="flex items-start justify-between mb-[16px]">
+            <div
+              data-fade
+              className="flex items-start justify-between mb-[16px] rounded-[12px] px-[16px] py-[14px] -mx-[16px]"
+              style={trialActive ? {
+                background: "linear-gradient(135deg, rgba(254,243,199,0.55) 0%, rgba(251,191,36,0.10) 60%, rgba(255,251,235,0.30) 100%)",
+              } : undefined}
+            >
               <div>
                 <h1 className="text-[24px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-tight">
                   {pageTab === "overview" ? "Overview" : "Active Inventory"}
@@ -295,21 +301,40 @@ export function Demo2Dashboard({
                 </p>
               </div>
               <div className="flex items-center gap-[10px]">
-                {/* Plan chip — always shows Studio OS Lite since that is the active plan */}
-                <span
-                  data-tour-id="plan-chip"
-                  className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-semibold text-[#4600F2] bg-[rgba(70,0,242,0.07)] border border-[rgba(70,0,242,0.18)] font-['Inter:Semi_Bold',sans-serif]"
-                >
-                  Studio OS Lite
-                </span>
+                {/* Plan chip — shows Pro (gold) when trial is active, Lite (purple) otherwise */}
+                {trialActive ? (
+                  <span
+                    data-tour-id="plan-chip"
+                    className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-semibold font-['Inter:Semi_Bold',sans-serif]"
+                    style={{
+                      color: "#92600A",
+                      background: "linear-gradient(135deg, rgba(251,191,36,0.18) 0%, rgba(245,158,11,0.12) 100%)",
+                      border: "1px solid rgba(217,119,6,0.35)",
+                    }}
+                  >
+                    <span style={{ color: "#D97706", fontSize: 13 }}>✦</span>
+                    Studio OS Pro
+                  </span>
+                ) : (
+                  <span
+                    data-tour-id="plan-chip"
+                    className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-semibold text-[#4600F2] bg-[rgba(70,0,242,0.07)] border border-[rgba(70,0,242,0.18)] font-['Inter:Semi_Bold',sans-serif]"
+                  >
+                    Studio OS Lite
+                  </span>
+                )}
                 {/* Trial active badge */}
                 {trialActive && (
                   <span
-                    className="inline-flex items-center gap-[5px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-bold text-white font-['Inter:Bold',sans-serif]"
-                    style={{ background: "linear-gradient(90deg,#4600F2,#B651D7)" }}
+                    className="inline-flex items-center gap-[5px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-bold font-['Inter:Bold',sans-serif]"
+                    style={{
+                      color: "#92600A",
+                      background: "linear-gradient(90deg, rgba(251,191,36,0.22), rgba(245,158,11,0.15))",
+                      border: "1px solid rgba(217,119,6,0.30)",
+                    }}
                   >
-                    <Clock size={13} strokeWidth={2.4} />
-                    Pro Trial: 18 days left
+                    <Clock size={13} strokeWidth={2.4} style={{ color: "#D97706" }} />
+                    <span style={{ color: "#B45309" }}>Pro Trial: 18 days left</span>
                   </span>
                 )}
                 <button className="flex items-center gap-[6px] h-[36px] px-[14px] bg-white border border-black/10 rounded-[8px] text-[12px] font-medium text-[#374151] hover:bg-gray-50 font-['Inter:Medium',sans-serif]">
