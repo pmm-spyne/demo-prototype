@@ -250,7 +250,7 @@ export function IMSImportScreen({ onImport, initialImsId, dealershipName, demoCo
     <div className="bg-white flex flex-col size-full">
       <AppHeader dealershipName={dealershipName} />
       <div className="flex flex-1 min-h-0">
-        <AppSidebar active="Studio AI" />
+        <AppSidebar active="Studio OS" />
 
         <div className="flex-1 overflow-auto bg-[#f9fafb]">
           <div className="mx-auto max-w-[960px] px-[32px] pt-[28px] pb-[40px]">
@@ -411,14 +411,14 @@ export function IMSImportScreen({ onImport, initialImsId, dealershipName, demoCo
               <div className="flex gap-[16px]">
                 <FeatureBanner
                   icon={<Sparkles size={20} />}
-                  eyebrow="Smart Campaigns"
+                  eyebrow="Studio Promote"
                   title="Highlights, billboards & overlays at scale"
                   body="Automated visual campaigns fire when cars cross your 30, 45, and 60-day thresholds. No agency. No briefing cycle."
                   accent="#4600f2"
                 />
                 <FeatureBanner
                   icon={<Layers size={20} />}
-                  eyebrow="Smart Match"
+                  eyebrow="Studio Instant"
                   title="Reuse media for same-spec new vehicles"
                   body="AI matches incoming vehicles to existing studio shots by trim, color, and spec. New trade-ins go live on day 1, not day 12."
                   accent="#00C488"

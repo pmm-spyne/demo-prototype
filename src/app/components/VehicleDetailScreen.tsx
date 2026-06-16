@@ -545,7 +545,7 @@ export function VehicleDetailScreen({ vehicle, onBack, onNavigate }: Props) {
     <div className="bg-white flex flex-col size-full">
       <AppHeader />
       <div className="flex flex-1 min-h-0">
-        <AppSidebar active="Studio AI" onNavigate={onNavigate} />
+        <AppSidebar active="Studio OS" onNavigate={onNavigate} />
         <div ref={containerRef} className="flex-1 bg-[#FAFAFB] overflow-auto">
           <div className="px-[24px] py-[18px] min-w-[1000px]">
             {/* Title bar */}

@@ -3,12 +3,19 @@
  * Flows through the entire product so every number in the demo
  * reflects the prospect's actual situation, not hardcoded defaults.
  */
+/** Studio OS subscription tier. Lite gates Studio Promote behind a Pro upsell. */
+export type StudioTier = "lite" | "pro";
+
 export interface DemoConfig {
   // ── Identity ──────────────────────────────────────────────────────────
   aeName: string;
   dealershipName: string;
   enterpriseId: string;
   imsProvider: string;
+
+  // ── Plan ────────────────────────────────────────────────────────────────
+  /** Active Studio OS tier. Drives the in-dashboard Pro upsell (Studio Promote). */
+  tier: StudioTier;
 
   // ── Dealership profile (discovery) ────────────────────────────────────
   numRooftops: string;        // "1" | "2-3" | "4-7" | "8+"
@@ -78,6 +85,8 @@ export const DEFAULT_DEMO_CONFIG: DemoConfig = {
   dealershipName: "",
   enterpriseId: "",
   imsProvider: "Vincue",
+
+  tier: "lite",
 
   numRooftops: "",
   inventoryMix: "",

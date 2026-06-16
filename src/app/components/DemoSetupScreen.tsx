@@ -403,7 +403,7 @@ export function DemoSetupScreen({ onLaunch }: Props) {
         <div className="flex items-center gap-[10px]">
           <SpyneMark />
           <span className="font-bold text-[#402387] text-[18px] leading-none font-['Inter:Bold',sans-serif]">
-            Studio AI
+            Studio OS
           </span>
           <span className="ml-[6px] px-[8px] py-[2px] rounded-full bg-[rgba(70,0,242,0.08)] text-[10px] font-bold text-[#4600F2] uppercase tracking-[0.6px] font-['Inter:Bold',sans-serif]">
             Demo Setup
@@ -539,7 +539,7 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                       />
                       {config.daysToLiveChip && (
                         <p className="mt-[6px] text-[10px] text-[#4600F2]/70 font-['Inter:Regular',sans-serif]">
-                          Studio AI target: 1 day &rarr; saves{" "}
+                          Studio OS target: 1 day &rarr; saves{" "}
                           <span className="font-bold">
                             {opp.frontlineGapDays}d &times; ${config.holdingCostPerDay} &times; {config.monthlySalesVolume} units/mo
                           </span>
@@ -906,7 +906,7 @@ export function DemoSetupScreen({ onLaunch }: Props) {
                     {
                       label: "Frontline Gap",
                       detail: `${opp.frontlineGapDays} extra days × $${config.holdingCostPerDay} × ${config.monthlySalesVolume} units`,
-                      sub: "Days above Studio AI 1-day target",
+                      sub: "Days above Studio OS 1-day target",
                       value: opp.frontlineMonthly,
                       color: "#F59E0B",
                     },
@@ -956,18 +956,18 @@ export function DemoSetupScreen({ onLaunch }: Props) {
               )}
             </div>
 
-            {/* ── What Studio AI closes ─── */}
+            {/* ── What Studio OS closes ─── */}
             <div
               data-fade
               className="rounded-[14px] border border-[rgba(70,0,242,0.2)] bg-[rgba(70,0,242,0.04)] px-[20px] py-[16px] mb-[24px] flex items-center justify-between gap-[20px]"
             >
               <div>
                 <p className="text-[11px] uppercase tracking-[1px] font-bold text-[#4600F2] mb-[4px] font-['Inter:Bold',sans-serif]">
-                  What Studio AI closes
+                  What Studio OS closes
                 </p>
                 <p className="text-[14px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif]">
                   Fills {opp.vehiclesNoPhotos} photo gaps overnight. Frontline drops from{" "}
-                  {opp.currentDaysToFrontline} days to 1 day. Smart Campaigns auto-target{" "}
+                  {opp.currentDaysToFrontline} days to 1 day. Studio Promote auto-targets{" "}
                   {opp.agedVehicles} aged units.
                 </p>
               </div>

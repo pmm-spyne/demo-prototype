@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import gsap from "gsap";
-import { X, Check, ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { X, Check, ArrowRight, Loader2, Sparkles, Lock } from "lucide-react";
 import { StepMetricsPanel, type StepBucketKey } from "./StepMetricsPanel";
 import { type DemoConfig } from "../../types/demoConfig";
 
@@ -130,6 +130,17 @@ export interface PitchPanelProps extends PitchContent {
   channels?: PitchChannel[];
   selectedChannels?: Set<string>;
   onChannelToggle?: (id: string) => void;
+  /**
+   * When true, this product is gated behind Studio OS Pro. The pitch still
+   * renders its full story so the AE can sell it, but the primary CTA is
+   * replaced by an "Unlock with Studio OS Pro" upgrade button and a Pro lock
+   * banner is shown in the header.
+   */
+  locked?: boolean;
+  /** Fired when the AE clicks the Pro upgrade CTA on a locked pitch. */
+  onUpgrade?: () => void;
+  /** Optional one-liner shown in the locked banner (e.g. the $/day at stake). */
+  lockNote?: string;
   /** Dealer inputs from the setup screen — powers the Impact Metrics section */
   demoConfig?: DemoConfig;
   /** Number of buckets completed before this pitch opened (for chart history) */
@@ -212,6 +223,7 @@ export function PitchPanel(props: PitchPanelProps) {
     proof, heroImage, heroNode, comparison, features, featuresPhase = "pitch", actionLabel,
     channels, selectedChannels, onChannelToggle,
     success,
+    locked, onUpgrade, lockNote,
     demoConfig, completedSteps, metricsStep,
   } = props;
 
@@ -321,6 +333,15 @@ export function PitchPanel(props: PitchPanelProps) {
                 >
                   {step ?? "Spyne · Pitch"}
                 </p>
+                {locked && (
+                  <span
+                    className="inline-flex items-center gap-[4px] px-[8px] py-[2px] rounded-full text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]"
+                    style={{ background: MAGENTA_GRAD }}
+                  >
+                    <Lock size={9} strokeWidth={3} />
+                    Pro
+                  </span>
+                )}
               </div>
               <h2 className="mt-[8px] text-[26px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-[30px]">
                 {product}
@@ -357,6 +378,36 @@ export function PitchPanel(props: PitchPanelProps) {
 
         {/* Body */}
         <div ref={sectionsRef} className="flex-1 overflow-y-auto px-[28px] py-[20px]">
+          {/* Pro lock banner — Studio OS Pro gate. Renders above the pitch story
+              so the AE can still walk the product, but the value is quantified
+              against what only Pro unlocks. */}
+          {locked && (
+            <div
+              data-section
+              className="mb-[20px] relative overflow-hidden rounded-[16px] p-[18px] text-white"
+              style={{
+                background: "linear-gradient(135deg, #1E1240 0%, #4600F2 55%, #B651D7 100%)",
+                boxShadow: "0 14px 40px rgba(70,0,242,0.32), inset 0 0 0 1px rgba(255,255,255,0.12)",
+              }}
+            >
+              <Lock size={88} className="absolute -top-[10px] -right-[6px] text-white/10" strokeWidth={1.4} />
+              <div className="relative">
+                <p className="inline-flex items-center gap-[5px] px-[8px] py-[2px] rounded-full bg-white/15 text-[9px] font-bold uppercase tracking-[1.2px] mb-[10px] font-['Inter:Bold',sans-serif]">
+                  <Sparkles size={9} strokeWidth={2.6} />
+                  Studio OS Pro
+                </p>
+                <h3 className="text-[17px] font-bold font-['Inter:Bold',sans-serif] leading-[21px]">
+                  {product} unlocks with Studio OS Pro
+                </h3>
+                {lockNote && (
+                  <p className="mt-[6px] text-[12.5px] text-white/85 font-['Inter:Regular',sans-serif] leading-snug">
+                    {lockNote}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Success state — compact header + impact metrics charts replace the old green card */}
           {success && (
             <div data-section className="mb-[20px]">
@@ -685,6 +736,18 @@ export function PitchPanel(props: PitchPanelProps) {
 
         {/* Sticky footer CTA */}
         <div className="px-[24px] py-[14px] border-t border-black/8 bg-white">
+          {locked ? (
+            <button
+              type="button"
+              onClick={onUpgrade}
+              className="w-full inline-flex items-center justify-center gap-[8px] h-[44px] rounded-[10px] text-[14px] font-bold text-white font-['Inter:Bold',sans-serif] transition-transform hover:scale-[1.01]"
+              style={{ background: MAGENTA_GRAD, boxShadow: "0 8px 22px rgba(182,81,215,0.4)" }}
+            >
+              <Sparkles size={16} strokeWidth={2.6} />
+              Unlock with Studio OS Pro
+              <ArrowRight size={16} />
+            </button>
+          ) : (
           <button
             type="button"
             onClick={onAction}
@@ -708,6 +771,7 @@ export function PitchPanel(props: PitchPanelProps) {
               </>
             )}
           </button>
+          )}
         </div>
       </div>,
     document.body

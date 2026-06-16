@@ -21,7 +21,11 @@ import imgStudioExterior from "../assets/vehicle/studio-exterior-1.jpg";
 import imgCgiFront from "../assets/vehicle/cgi-front.jpg";
 import imgCgiTransformed from "../assets/vehicle/cgi-transformed-front.jpg";
 import { ImageOff } from "lucide-react";
-import { calcOpportunity, type DemoConfig } from "../types/demoConfig";
+import { calcOpportunity, DEFAULT_DEMO_CONFIG, type DemoConfig, type StudioTier } from "../types/demoConfig";
+import { OverviewPanel } from "./OverviewPanel";
+import { UnboxingScreen } from "./UnboxingScreen";
+import { ExpiredConsoleScreen } from "./ExpiredConsoleScreen";
+import confetti from "canvas-confetti";
 
 // ─── SmartMatch scan animation ────────────────────────────────────────────────
 // Shows a blank placeholder with a VIN number, then a purple scan line sweeps
@@ -247,7 +251,7 @@ function StockPhotoGridHero() {
                   animation: `sgBadgeFade ${DURATION} ease-in-out ${card.delay} infinite`,
                 }}
               >
-                ✓ Studio AI
+                ✓ Studio OS
               </div>
             </div>
           ))}
@@ -612,7 +616,7 @@ function RawScanHero() {
         >
           <span className="size-[5px] rounded-full bg-white" />
           <span className="text-[9px] font-bold uppercase tracking-[0.8px] text-white font-['Inter:Bold',sans-serif]">
-            Studio AI output
+            Studio OS output
           </span>
         </div>
 
@@ -624,7 +628,7 @@ function RawScanHero() {
             boxShadow: "0 4px 14px rgba(182,81,215,0.45)",
           }}
         >
-          Studio AI
+          Studio OS
         </div>
 
         {/* Top-left scanning indicator */}
@@ -643,8 +647,8 @@ function RawScanHero() {
 const PITCHES: Record<BucketKey, PitchContent> = {
   raw: {
     accent: "#E91E63",
-    step: "Step 01 · Studio AI · Smart Shoot",
-    product: "Smart Shoot",
+    step: "Step 01 · Studio OS · Studio Create",
+    product: "Studio Create",
     punchline: "List faster with listings that convert.",
     tagline: "Turns any smartphone into a full studio, creating interactive listings with studio-grade images, car tours and video tours.",
     problem:
@@ -686,8 +690,8 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   },
   nophoto: {
     accent: "#7F6AF2",
-    step: "Step 02 · Studio AI · Smart Match",
-    product: "SmartMatch",
+    step: "Step 02 · Studio OS · Studio Instant",
+    product: "Studio Instant",
     punchline: "Capture demand from Day 0",
     tagline: "Publish studio-grade listings the moment you acquire a vehicle, before it even arrives on lot.",
     problem:
@@ -725,14 +729,14 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     ],
     bulletStyle: "nodes",
     heroNode: <SmartMatchScanHero />,
-    actionLabel: "Run SmartMatch",
+    actionLabel: "Run Studio Instant",
   },
   cgi: {
     accent: "#7C3AED",
-    step: "Step 03 · Studio AI · Smart Match",
-    product: "SmartMatch",
+    step: "Step 03 · Studio OS · Studio Instant",
+    product: "Studio Instant",
     punchline: "Real images. Consistent listings.",
-    tagline: "SmartMatch finds VIN-matched real vehicle assets so every listing goes live with authentic, consistent images across VDP and VLP.",
+    tagline: "Studio Instant finds VIN-matched real vehicle assets so every listing goes live with authentic, consistent images across VDP and VLP.",
     problem:
       "Stock images on your VDPs are hurting your dealership brand. Inconsistent backgrounds, watermarks, and non-standard crops across listings reduce buyer trust and suppress VDP clicks.",
     problemChips: [
@@ -762,7 +766,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
     },
     bullets: [
       "Stock photo detected",
-      "SmartMatch searches by VIN",
+      "Studio Instant searches by VIN",
       "Real vehicle assets found",
       "Go live with real images",
     ],
@@ -778,8 +782,8 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   },
   unsyndicated: {
     accent: "#4600F2",
-    step: "Step 04 · Studio AI · Syndication",
-    product: "Syndication",
+    step: "Step 04 · Studio OS · Studio Publish",
+    product: "Studio Publish",
     punchline: "Every channel, one click.",
     tagline: "One action publishes your studio-grade inventory to every marketplace, auto-formatted and ready to go live at any scale.",
     problem:
@@ -821,8 +825,8 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   },
   aging: {
     accent: "#DC2626",
-    step: "Step 05 · Studio AI · Smart Campaigns",
-    product: "Smart Campaigns",
+    step: "Step 05 · Studio OS · Studio Promote",
+    product: "Studio Promote",
     punchline: "Right offer. Right car. Right time.",
     tagline: "Run visual promotions like an expert marketing team would, automatically across every listing in your inventory.",
     problem:
@@ -870,7 +874,7 @@ const PITCHES: Record<BucketKey, PitchContent> = {
   },
 };
 
-type Scene = "connect" | "loading" | "scanning" | "dashboard";
+type Scene = "connect" | "loading" | "scanning" | "unboxing" | "dashboard" | "expired";
 
 interface VehicleState extends Row {
   initialBuckets: BucketKey[];
@@ -1066,7 +1070,7 @@ const NEXT_BUCKET_LABELS: Record<BucketKey, string> = {
   nophoto:      "Fix stock photo listings",
   cgi:          "Publish across platforms",
   unsyndicated: "Fix aged inventory",
-  aging:        "Smart Campaigns",
+  aging:        "Studio Promote",
 };
 
 // Priority: raw > nophoto > unsyndicated > aging > done
@@ -1092,6 +1096,8 @@ interface Demo2Props {
 
 export function Demo2({ demoConfig }: Demo2Props) {
   const [scene, setScene] = useState<Scene>("connect");
+  const [dashTab, setDashTab] = useState<"overview" | "inventory">("inventory");
+  const [tier, setTier] = useState<StudioTier>(demoConfig?.tier ?? "lite");
   const [imsName, setImsName] = useState(demoConfig?.imsProvider ?? "Vincue");
   const [activeBucket, setActiveBucket] = useState<BucketKey | null>(null);
   const [pitchOpen, setPitchOpen] = useState(false);
@@ -1166,8 +1172,16 @@ export function Demo2({ demoConfig }: Demo2Props) {
     // Fresh dashboard entry — clear any pitch/filter state left from a prior run or HMR.
     setActiveBucket(null);
     setPitchOpen(false);
-    setScene("dashboard");
+    // First-time experience: unbox Studio OS before landing on the console.
+    setScene("unboxing");
   }, []);
+
+  const handleUnboxingContinue = useCallback(() => setScene("dashboard"), []);
+
+  // Trial-expiry demo flow: degrade to the standard console with $-lost
+  // messaging, then reactivate back into Studio OS.
+  const handleExpire = useCallback(() => setScene("expired"), []);
+  const handleReactivate = useCallback(() => setScene("dashboard"), []);
 
   // ─── Bucket click → filter + open pitch (no transformation yet) ──
   const handleBucketClick = useCallback((b: BucketKey) => {
@@ -1206,6 +1220,19 @@ export function Demo2({ demoConfig }: Demo2Props) {
       setRunningBucket(null);
     }, 1600);
   }, [vehicles, runningBucket, completed]);
+
+  // Studio Promote is gated on Lite. Upgrading flips the tier to Pro, which
+  // unlocks the aging bucket's campaign builder. A burst of confetti sells the
+  // moment — the dashboard's own $/day bleed was the argument.
+  const handleUpgradeToPro = useCallback(() => {
+    setTier("pro");
+    confetti({
+      particleCount: 120,
+      spread: 70,
+      origin: { x: 0.85, y: 0.4 },
+      colors: ["#4600F2", "#B651D7", "#FF5C9A", "#FFFFFF"],
+    });
+  }, []);
 
   // From the SmartCampaign pitch CTA → close pitch, minimise the Need Actions
   // FAB, auto-select all aging vehicles, and surface the SelectionActionBar so
@@ -1280,10 +1307,64 @@ export function Demo2({ demoConfig }: Demo2Props) {
       </div>
     );
   }
+  if (scene === "unboxing") {
+    return (
+      <div className="size-full overflow-auto">
+        <UnboxingScreen
+          dealerName={demoConfig?.dealershipName}
+          onContinue={handleUnboxingContinue}
+        />
+      </div>
+    );
+  }
+  if (scene === "expired") {
+    const expiredOpp = calcOpportunity(demoConfig ?? DEFAULT_DEMO_CONFIG);
+    return (
+      <div className="size-full">
+        <ExpiredConsoleScreen
+          dealerName={demoConfig?.dealershipName}
+          dailyLost={Math.round(expiredOpp.totalMonthly / 30)}
+          monthlyLost={Math.round(expiredOpp.totalMonthly)}
+          onReactivate={handleReactivate}
+        />
+      </div>
+    );
+  }
 
   const pitchContent = activeBucket ? PITCHES[activeBucket] : null;
   const isAgingPitch = activeBucket === "aging";
   const isActiveCompleted = activeBucket ? completed[activeBucket] : false;
+  // Studio Promote (aging bucket) is the Pro upsell. On Lite it stays locked
+  // until the AE upgrades — and the lock note quantifies the daily bleed only
+  // Pro can stop, so the dashboard's own numbers do the selling.
+  const promoteLocked = tier === "lite" && !completed.aging;
+  const agingLocked = isAgingPitch && promoteLocked;
+  const lockedKeys = new Set<BucketKey>(promoteLocked ? (["aging"] as BucketKey[]) : []);
+
+  // ROI-as-value numbers for the Overview tab — sourced from the same
+  // opportunity model the setup screen uses, so the story stays consistent.
+  const opp = calcOpportunity(demoConfig ?? DEFAULT_DEMO_CONFIG);
+  const overviewSlot = (
+    <OverviewPanel
+      dealerName={demoConfig?.dealershipName}
+      tier={tier}
+      onUpgrade={handleUpgradeToPro}
+      onExpire={handleExpire}
+      trialDaysLeft={18}
+      completedCount={completedCount}
+      totalSteps={BUCKET_ORDER.length}
+      dtfBaseline={DTF_BY_STEP[0]}
+      dtfCurrent={dtf}
+      holdingSavedMonthly={Math.round(opp.frontlineMonthly + opp.agedMonthly)}
+      photographySavedMonthly={Math.round(opp.photographyCostMonthly)}
+      totalValueMonthly={Math.round(opp.totalMonthly)}
+      vdpUplift={34}
+      promoteLocked={promoteLocked}
+    />
+  );
+  const agingDailyBleed = demoConfig
+    ? Math.round(calcOpportunity(demoConfig).agedVehicles * demoConfig.holdingCostPerDay)
+    : 1_564;
   // First bucket in canonical order that hasn't been resolved yet (excluding the
   // current bucket itself — so after resolving raw, "next" is nophoto, not raw).
   const nextBucket = BUCKET_ORDER.find((k) => k !== activeBucket && !completed[k]) ?? null;
@@ -1306,17 +1387,27 @@ export function Demo2({ demoConfig }: Demo2Props) {
         transformingIds={transformingIds}
         selectedIds={selectedVehicleIds}
         onToggleSelect={handleToggleSelect}
+        tier={tier}
+        lockedKeys={lockedKeys}
+        overviewSlot={overviewSlot}
+        onPageTabChange={setDashTab}
       />
 
-      <InventoryDiagnosticFab
-        buckets={buckets}
-        activeBucket={activeBucket}
-        onBucketClick={handleBucketClick}
-        expanded={fabExpanded}
-        onExpandedChange={setFabExpanded}
-      />
+      {/* Diagnostic FAB + before/after toggle belong to the Active Inventory
+          workflow — hidden on the Overview value report. */}
+      {dashTab === "inventory" && (
+        <>
+          <InventoryDiagnosticFab
+            buckets={buckets}
+            activeBucket={activeBucket}
+            onBucketClick={handleBucketClick}
+            expanded={fabExpanded}
+            onExpandedChange={setFabExpanded}
+          />
 
-      <BeforeAfterToggle active={dashboardView} onChange={setDashboardView} />
+          <BeforeAfterToggle active={dashboardView} onChange={setDashboardView} />
+        </>
+      )}
 
       {/* Selection action bar — surfaces during the Smart Campaign flow */}
       <SelectionActionBar
@@ -1378,7 +1469,7 @@ export function Demo2({ demoConfig }: Demo2Props) {
           } : {}),
           ...(activeBucket === "nophoto" ? {
             title:    `${BUCKET_TOTALS.nophoto} vehicles matched and live.`,
-            subtitle: "SmartMatch filled every eligible listing before a camera touched them.",
+            subtitle: "Studio Instant filled every eligible listing before a camera touched them.",
             chips: [
               { delta: `${BUCKET_TOTALS.nophoto}`,                          label: "Vehicles matched"     },
               { delta: "0 → 4 min",                                         label: "Time to live"         },
@@ -1389,7 +1480,7 @@ export function Demo2({ demoConfig }: Demo2Props) {
           } : {}),
           ...(activeBucket === "aging" ? {
             title:    `${BUCKET_TOTALS.aging} aged units. Campaigns active.`,
-            subtitle: "Smart Campaigns applied visual promotions across your 45-day inventory. Targeted shoppers are now seeing your cars.",
+            subtitle: "Studio Promote applied visual promotions across your 45-day inventory. Targeted shoppers are now seeing your cars.",
             chips: [
               { delta: `${BUCKET_TOTALS.aging}`,                            label: "Units promoted"       },
               { delta: "+40%",                                               label: "VDP views uplift"     },
@@ -1431,8 +1522,13 @@ export function Demo2({ demoConfig }: Demo2Props) {
             actionRunning={runningBucket === activeBucket}
             completed={false}
             {...pitchContent}
-            success={successForActive}
+            success={agingLocked ? undefined : successForActive}
             actionLabel={label}
+            locked={agingLocked}
+            onUpgrade={handleUpgradeToPro}
+            lockNote={agingLocked
+              ? `${BUCKET_TOTALS.aging} aged units are bleeding ~$${agingDailyBleed.toLocaleString()}/day in holding cost. Studio Promote auto-runs visual promotions to move them — included with Studio OS Pro.`
+              : undefined}
             demoConfig={demoConfig}
             completedSteps={completedCount}
             metricsStep={activeBucket ?? undefined}

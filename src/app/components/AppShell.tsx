@@ -110,7 +110,7 @@ type SidebarItem =
   | { label: string; path?: string; node?: React.ReactNode };
 
 export function AppSidebar({
-  active = "Studio AI",
+  active = "Studio OS",
   onNavigate,
 }: {
   active?: string;
@@ -119,7 +119,7 @@ export function AppSidebar({
   const items: SidebarItem[] = [
     { label: "Home", path: svgPaths.p3c42e100 },
     { divider: true },
-    { label: "Studio AI", path: svgPaths.p14b6a800 },
+    { label: "Studio OS", path: svgPaths.p14b6a800 },
     { label: "Inventory", path: svgPaths.p37f9f500 },
     { label: "Vini AI", path: svgPaths.p1044bb72 },
     { label: "Marketing", node: <Megaphone size={20} strokeWidth={2} /> },

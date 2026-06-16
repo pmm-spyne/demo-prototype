@@ -2,8 +2,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import gsap from "gsap";
 import {
   Plus, Sparkles, ChevronDown, Filter, Download, Eye, CircleDot, Info,
-  Camera, ImageOff, Wand2, Send, TrendingDown,
+  Camera, ImageOff, Wand2, Send, TrendingDown, Lock,
 } from "lucide-react";
+import type { StudioTier } from "../types/demoConfig";
 import { AppHeader, AppSidebar } from "./AppShell";
 import { VehicleRow, ColHeader, type Row } from "./shared/VehicleRow";
 import { MiniBars } from "./shared/KpiCards";
@@ -41,7 +42,19 @@ export interface Demo2DashboardProps {
   selectedIds: Set<number>;
   onToggleSelect: (id: number) => void;
   onNavigate?: (label: string) => void;
+  /** Active Studio OS tier — drives the plan chip + Pro-locked filter pills. */
+  tier?: StudioTier;
+  /** Bucket keys gated behind Studio OS Pro (renders a lock on the pill). */
+  lockedKeys?: Set<BucketKey>;
+  /** Rendered when the Overview page-tab is active (the ROI value report). */
+  overviewSlot?: React.ReactNode;
+  /** Which page-tab to land on. Second-time journeys open on "overview". */
+  initialPageTab?: PageTab;
+  /** Notifies the parent when the page-tab changes (to toggle overlays). */
+  onPageTabChange?: (tab: PageTab) => void;
 }
+
+export type PageTab = "overview" | "inventory";
 
 function Tab({ label, count, active, onClick }: {
   label: string; count?: number; active?: boolean; onClick?: () => void;
@@ -133,10 +146,12 @@ export function Demo2Dashboard({
   buckets, activeBucket, onBucketClick, onClearBucket,
   rows, highlightIds, transformingIds,
   selectedIds, onToggleSelect, onNavigate,
+  tier = "lite", lockedKeys, overviewSlot, initialPageTab = "inventory", onPageTabChange,
 }: Demo2DashboardProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const tbodyRef = useRef<HTMLTableSectionElement>(null);
   const [vehicleType, setVehicleType] = useState<VehicleTypeTab>("new");
+  const [pageTab, setPageTab] = useState<PageTab>(initialPageTab);
 
   // Tabs filter by the explicit vehicleType field; aging on the lot does
   // *not* make a vehicle pre-owned — it can still be a new unit racking up
@@ -247,27 +262,42 @@ export function Demo2Dashboard({
     <div className="bg-white flex flex-col size-full">
       <AppHeader />
       <div className="flex flex-1 min-h-0">
-        <AppSidebar active="Studio AI" onNavigate={onNavigate} />
+        <AppSidebar active="Studio OS" onNavigate={onNavigate} />
         <div ref={containerRef} className="flex-1 bg-[#f9fafb] overflow-auto">
           <div className="px-[28px] py-[20px] min-w-[1100px]">
             {/* Page header */}
             <div data-fade className="flex items-start justify-between mb-[16px]">
               <div>
                 <h1 className="text-[24px] font-bold text-[#0a0a0a] font-['Inter:Bold',sans-serif] leading-tight">
-                  Active Inventory
+                  {pageTab === "overview" ? "Overview" : "Active Inventory"}
                 </h1>
                 <p className="text-[13px] text-[#6B7280] mt-[2px] font-['Inter:Regular',sans-serif]">
-                  Your full merchandising ecosystem, from first scan to final sale
+                  {pageTab === "overview"
+                    ? "The value Studio OS is creating across your inventory"
+                    : "Your full merchandising ecosystem, from first scan to final sale"}
                 </p>
               </div>
               <div className="flex items-center gap-[10px]">
+                {tier === "pro" ? (
+                  <span
+                    className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-bold text-white font-['Inter:Bold',sans-serif]"
+                    style={{ background: "linear-gradient(90deg, #4600F2 0%, #B651D7 100%)" }}
+                  >
+                    <Sparkles size={13} strokeWidth={2.6} />
+                    Studio OS Pro
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-[6px] h-[36px] px-[12px] rounded-[8px] text-[12px] font-semibold text-[#4600F2] bg-[rgba(70,0,242,0.07)] border border-[rgba(70,0,242,0.18)] font-['Inter:Semi_Bold',sans-serif]">
+                    Studio OS Lite
+                  </span>
+                )}
                 <button className="flex items-center gap-[6px] h-[36px] px-[14px] bg-white border border-black/10 rounded-[8px] text-[12px] font-medium text-[#374151] hover:bg-gray-50 font-['Inter:Medium',sans-serif]">
                   Holding Cost: <span className="text-[#4600f2] font-semibold">$45/day</span>
                   <ChevronDown size={13} className="text-gray-400" />
                 </button>
                 <button className="flex items-center gap-[6px] h-[36px] px-[14px] bg-white border border-[#4600F2] rounded-[8px] text-[12px] font-semibold text-[#4600F2] hover:bg-[rgba(70,0,242,0.04)] font-['Inter:Semi_Bold',sans-serif]">
                   <Sparkles size={13} />
-                  Create SmartCampaign
+                  Create Promotion
                 </button>
                 <button className="flex items-center gap-[6px] h-[36px] px-[14px] bg-[#4600F2] rounded-[8px] text-[12px] font-semibold text-white hover:bg-[#3a00d0] font-['Inter:Semi_Bold',sans-serif]">
                   <Plus size={14} strokeWidth={2.5} />
@@ -276,6 +306,28 @@ export function Demo2Dashboard({
               </div>
             </div>
 
+            {/* Page tabs — Overview / Active Inventory */}
+            <div data-fade className="flex items-center gap-[4px] mb-[20px] p-[4px] bg-black/[0.04] rounded-[10px] w-fit">
+              {([["overview", "Overview"], ["inventory", "Active Inventory"]] as const).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => { setPageTab(key); onPageTabChange?.(key); }}
+                  className={`h-[32px] px-[16px] rounded-[8px] text-[12.5px] font-semibold font-['Inter:Semi_Bold',sans-serif] transition-colors ${
+                    pageTab === key
+                      ? "bg-white text-[#4600F2] shadow-[0_1px_3px_rgba(0,0,0,0.1)]"
+                      : "text-black/55 hover:text-[#0a0a0a]"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {pageTab === "overview" ? (
+              <div data-fade>{overviewSlot}</div>
+            ) : (
+            <>
             {/* Tabs row */}
             <div data-fade className="flex items-end justify-between border-b border-black/8 mb-[28px]">
               <div className="flex items-center gap-[24px] -mb-[1px]">
@@ -365,7 +417,7 @@ export function Demo2Dashboard({
                             <span className="font-bold text-[#059669] font-['Inter:Bold',sans-serif]">&lt; 3 days</span>
                           </div>
                           <div className="flex justify-between text-[11px]">
-                            <span className="text-black/50 font-['Inter:Regular',sans-serif]">Studio AI target</span>
+                            <span className="text-black/50 font-['Inter:Regular',sans-serif]">Studio OS target</span>
                             <span className="font-bold text-[#4600F2] font-['Inter:Bold',sans-serif]">1 day</span>
                           </div>
                         </div>
@@ -566,6 +618,7 @@ export function Demo2Dashboard({
                   const state = buckets[f.key];
                   const isActive = activeBucket === f.key;
                   const isDone = state.completed;
+                  const isLocked = Boolean(lockedKeys?.has(f.key));
                   return (
                     <button
                       key={f.key}
@@ -608,6 +661,15 @@ export function Demo2Dashboard({
                       >
                         {state.count}
                       </span>
+                      {isLocked && (
+                        <span
+                          className="inline-flex items-center gap-[3px] px-[6px] py-[1px] rounded-full text-[9px] font-bold uppercase tracking-[0.5px] text-white font-['Inter:Bold',sans-serif]"
+                          style={{ background: isActive ? "rgba(255,255,255,0.22)" : "linear-gradient(90deg,#4600F2,#B651D7)" }}
+                        >
+                          <Lock size={9} strokeWidth={3} />
+                          Pro
+                        </span>
+                      )}
                     </button>
                   );
                 })}
@@ -670,6 +732,8 @@ export function Demo2Dashboard({
                 </tbody>
               </table>
             </div>
+            </>
+            )}
           </div>
         </div>
       </div>

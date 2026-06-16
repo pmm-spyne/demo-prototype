@@ -305,7 +305,7 @@ export function DashboardScreen({
     <div className="bg-white flex flex-col size-full">
       <AppHeader />
       <div className="flex flex-1 min-h-0">
-        <AppSidebar active="Studio AI" onNavigate={onNavigate} />
+        <AppSidebar active="Studio OS" onNavigate={onNavigate} />
         <div ref={containerRef} className="flex-1 bg-[#f9fafb] overflow-auto">
           <div className="px-[28px] py-[20px] min-w-[1100px]">
             {/* Page header */}
